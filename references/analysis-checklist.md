@@ -1,83 +1,83 @@
-# Analysis Checklist
+# 分析检查清单
 
-Use this checklist during repository analysis. Do not dump it verbatim unless the user asks for a checklist.
+分析仓库时使用本清单。除非用户明确要求，不要把清单原样输出给用户。
 
-## Repository Surface
+## 仓库表面信息
 
-- Project name and stated purpose
-- Languages and package managers
-- Top-level directories
-- Docs, examples, tests, scripts, CI, deployment files
-- Environment templates or `.env.*`
-- Generated/vendor/cache/build directories to skip
-- Single project, nested project, monorepo, or mixed-language system
+- 项目名称和文档声明的用途
+- 使用的语言和包管理器
+- 顶层目录
+- 文档、示例、测试、脚本、CI、部署文件
+- 环境模板或 `.env.*`
+- 应跳过的生成物、vendor、缓存、构建目录
+- 单项目、嵌套项目、monorepo 或多语言混合系统
 
-## Entry Points
+## 入口点
 
-- Local startup command
-- Main app/server/CLI entry file
-- Frontend app root and routing
-- Backend routes/controllers
-- API clients and service layer
-- Global state root
-- Test/build/lint commands
-- Background workers, queues, scheduled tasks
+- 本地启动命令
+- 主应用、服务端或 CLI 入口文件
+- 前端应用根和路由
+- 后端路由和 controller
+- API client 和 service 层
+- 全局状态入口
+- 测试、构建、lint 命令
+- 后台 worker、队列、定时任务
 
-## Architecture
+## 架构
 
-- Main layers and runtime boundaries
-- Input handling and dispatch path
-- Core domain logic
-- External system adapters
-- Error representation and propagation
-- Public/stable contracts vs internal details
+- 主要分层和运行边界
+- 输入处理和分发路径
+- 核心领域逻辑
+- 外部系统适配层
+- 错误表示和传播方式
+- 公开/稳定契约与内部细节
 
-## Data and Control Flow
+## 数据流和控制流
 
-- Most important user/system flow
-- Data transformed at each step
-- IDs, paths, handles, or state references passed forward
-- External side effects
-- Result path back to caller/UI
+- 最重要的用户或系统流程
+- 每一步如何转换数据
+- 向后传递的 ID、路径、handle 或状态引用
+- 外部副作用
+- 结果如何返回调用方或 UI
 
-## State and Contracts
+## 状态和契约
 
-- Required configuration
-- Environment variables read
-- Request/response schemas or types
-- Runtime state in memory
-- Persistent state, cache, files, database, localStorage/sessionStorage
-- Data that can become stale
+- 必需配置
+- 读取的环境变量
+- 请求/响应 schema 或类型
+- 内存中的运行时状态
+- 持久化状态、缓存、文件、数据库、localStorage/sessionStorage
+- 可能过期的数据
 
-## Verification
+## 验证
 
-- Existing tests and test framework
-- Whether tests are runnable here
-- Manual smoke tests
-- Commands actually run
-- What passing checks prove
-- What remains unverified
+- 现有测试和测试框架
+- 当前环境是否能运行测试
+- 手动冒烟测试
+- 实际执行过的命令
+- 通过检查能证明什么
+- 仍未验证什么
 
-## Risk Scan
+## 风险扫描
 
-- Configuration ambiguity
-- Hardcoded ports or paths
-- Missing error handling
-- Hidden external state
-- Weak validation
-- Stale documentation
-- Missing tests
-- Large untyped payloads
-- Race conditions or repeated side effects
-- Platform-specific assumptions
-- Build/deploy scripts with side effects
-- Production-like defaults in local commands
+- 配置含义不清
+- 硬编码端口或路径
+- 缺少错误处理
+- 隐藏外部状态
+- 校验薄弱
+- 文档过期
+- 测试缺失
+- 大型未类型化 payload
+- 竞态条件或重复副作用
+- 平台特定假设
+- 构建/部署脚本有副作用
+- 本地命令使用接近生产的默认配置
 
-## Newcomer Orientation
+## 新人入门
 
-- First file to read
-- First command to run
-- First UI/API flow to test
-- First safe small change
-- Files to avoid changing initially
-- Concepts to learn before modifying core logic
+- 第一个应读文件
+- 第一个应运行命令
+- 第一个应测试的 UI/API 流程
+- 第一个安全的小改动
+- 初期应避免修改的文件
+- 修改核心逻辑前需要理解的概念

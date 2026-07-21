@@ -1,69 +1,69 @@
-# Frontend Project Analysis
+# 前端项目分析
 
-Use for React, Vue, Angular, Next.js, Nuxt, Vite, Electron renderer, or frontend-heavy admin systems.
+适用于 React、Vue、Angular、Next.js、Nuxt、Vite、Electron renderer，或以前端为主的后台管理系统。
 
-## Questions
+## 关键问题
 
-- What framework and router are used?
-- Where is the app root?
-- Which components are client-only?
-- Where are layouts, error pages, loading pages, and route guards?
-- Where are API clients defined?
-- Where is global state stored?
-- How is authentication handled?
-- How are permissions represented: route, menu, button, API?
-- How are environment variables loaded?
-- How are errors displayed?
-- How are uploads/downloads handled?
-- How are styles organized?
-- What build/dev scripts exist?
+- 使用什么框架和路由？
+- 应用根在哪里？
+- 哪些组件只能在客户端运行？
+- layout、错误页、loading 页、路由守卫在哪里？
+- API client 定义在哪里？
+- 全局状态存在哪里？
+- 认证如何处理？
+- 权限如何表示：路由、菜单、按钮还是 API？
+- 环境变量如何加载？
+- 错误如何展示？
+- 上传和下载如何处理？
+- 样式如何组织？
+- 有哪些构建和开发脚本？
 
-## Flow to Trace
+## 需要追踪的流程
 
 ```text
-User interaction
--> route/page
--> component/hook
+用户交互
+-> 路由/页面
+-> 组件/hook
 -> service/API client
--> HTTP request
--> response parsing
--> state update
--> UI render
+-> HTTP 请求
+-> 响应解析
+-> 状态更新
+-> UI 渲染
 ```
 
-## Environment and Runtime
+## 环境和运行时
 
-Identify:
+识别以下内容：
 
-- dev server port
-- backend/API base URL
-- proxy/rewrite config
-- CORS assumptions
-- build output directory
-- asset/CDN prefix
-- image remote domains
-- WebSocket endpoints
-- required local backend services
+- 开发服务器端口
+- 后端/API base URL
+- proxy/rewrite 配置
+- CORS 假设
+- 构建输出目录
+- asset/CDN 前缀
+- 图片远程域名
+- WebSocket 端点
+- 本地必需的后端服务
 
-## Common Failure Modes
+## 常见失败模式
 
-- Frontend points at wrong backend URL
-- Environment variable only available at build time
-- API prefix is applied twice or not applied
-- Auth token missing or stale
-- Permission cache stale
-- API response shape changed
-- SSR/client boundary breaks due to `window` or `localStorage`
-- Build skips lint/typecheck
-- Generated build files or copied assets drift
+- 前端指向错误的后端地址
+- 环境变量只在构建时可用
+- API 前缀被重复添加或未添加
+- 认证 token 缺失或过期
+- 权限缓存过期
+- API 响应结构变化
+- SSR/客户端边界因 `window` 或 `localStorage` 破裂
+- 构建跳过 lint 或类型检查
+- 生成的构建文件或复制资产发生漂移
 
-## Recommended Verification
+## 推荐验证
 
 - typecheck
 - lint
-- unit tests
+- 单元测试
 - build
-- manual login smoke test
-- core page network request check
-- browser console check
-- upload/download smoke test when relevant
+- 手动登录冒烟测试
+- 核心页面网络请求检查
+- 浏览器控制台检查
+- 相关时执行上传/下载冒烟测试

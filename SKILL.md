@@ -1,70 +1,70 @@
 ---
 name: project-guide-skill
-description: Analyze, onboard, document, or audit a software project/repository and produce a newcomer-oriented project guide. Use when asked to understand an unfamiliar codebase, explain architecture, map project structure, identify technical stack and conventions, trace core flows, prepare learning documents, generate handoff docs, or create evidence-backed project analysis reports with risks, verification steps, and next actions.
+description: 分析、理解、记录或审计软件项目/仓库，并生成面向新成员的项目指南。适用于理解陌生代码库、解释架构、梳理目录结构、识别技术栈和约定、追踪核心流程、编写交接文档，以及生成带证据、风险、验证步骤和后续行动的项目分析报告。
 ---
 
-# Project Guide Skill
+# 项目指南技能
 
-Use this skill to turn an unfamiliar repository into a practical learning guide. Focus on how to run it, where to start reading, how the main flow works, what conventions to follow, what can break, and what still needs confirmation.
+该技能用于把陌生仓库整理成实用的项目学习指南。重点回答：项目如何运行、应该从哪里开始读、主流程如何工作、开发约定是什么、哪些地方容易出问题、还有哪些信息需要确认。
 
-This skill is designed for `LingLuoMuYun/Project-guide-skill`. The Codex skill name is `project-guide-skill` to satisfy skill naming rules.
+该技能面向 `LingLuoMuYun/Project-guide-skill` 仓库。Codex 技能名保留为 `project-guide-skill`，以满足技能命名规则。
 
-## Operating Rules
+## 操作原则
 
-- Inspect before concluding. Separate observed facts, documented claims, runtime verification, inferences, and open questions.
-- Prefer the repository's actual structure over generic architecture labels.
-- Tie important claims to evidence: file paths, configs, commands, test output, or docs.
-- Do not print secrets. Mention sensitive config generically without exposing values.
-- Avoid exhaustive file-by-file summaries. Explain by role, flow, boundary, convention, and risk.
-- If a command is not run, say it was not run and why.
-- For user-facing reports in Chinese projects, produce concise Chinese summaries unless the user asks otherwise.
+- 先检查再下结论。区分已观察事实、文档声明、运行验证、合理推断和待确认问题。
+- 优先依据仓库真实结构，不套用泛化架构标签。
+- 关键结论要绑定证据：文件路径、配置、命令输出、测试结果或文档。
+- 不输出密钥、令牌、连接串等敏感值，只描述其用途和位置。
+- 避免逐文件流水账。按职责、流程、边界、约定和风险解释。
+- 未执行的命令要说明未执行及原因。
+- 用户未指定语言时，面向中文项目默认输出简洁中文报告。
 
-## Analysis Depth
+## 分析深度
 
-Default to **standard** if the user does not specify depth.
+用户未指定时，默认使用 **standard**。
 
-| Depth | Scope | Execution | Output |
+| 深度 | 范围 | 执行方式 | 输出重点 |
 | --- | --- | --- | --- |
-| quick | README, manifests, top-level dirs, scripts | read-only discovery | stack, key files, obvious risks, next commands |
-| standard | quick + entrypoints, core modules, config, tests | safe read-only plus lightweight verification when appropriate | architecture map, startup path, core flow, risks, learning path |
-| deep | standard + 1-3 traced flows and relevant contracts/tests | targeted tests/build/typecheck when safe | flow traces, state/contracts, failure modes, missing coverage |
-| audit | broad risk surface: auth, config, state, CI/CD, dependencies | validation/dry-run/read-only unless user approves more | evidence ledger, risk register, prioritized remediation |
+| quick | README、清单文件、顶层目录、脚本 | 只读发现 | 技术栈、关键文件、明显风险、下一步命令 |
+| standard | quick + 入口文件、核心模块、配置、测试 | 安全只读 + 轻量验证 | 架构图、启动路径、核心流程、风险、阅读路线 |
+| deep | standard + 1 到 3 条核心流程和相关契约/测试 | 有针对性地运行测试、构建或类型检查 | 流程追踪、状态/契约、失败模式、覆盖缺口 |
+| audit | 身份、权限、配置、状态、CI/CD、依赖等风险面 | 默认验证、dry-run、只读；更高风险动作需确认 | 证据清单、风险登记、修复优先级 |
 
-## Core Workflow
+## 核心流程
 
-1. Clarify the goal only when necessary: onboarding, architecture report, development guide, debugging map, refactor planning, audit, or handoff.
-2. Inventory the repository with fast read-only discovery:
-   - top-level files and directories
-   - docs, manifests, locks, configs, scripts, tests, CI, containers, env templates
-   - generated/vendor/cache/build directories to skip
-3. Detect the technical stack:
-   - languages, frameworks, package manager, runtime, build tools
-   - infrastructure and deployment artifacts
-4. Map the project shape:
-   - frontend, backend, full-stack, library, CLI, monorepo, data/ML, infra, mobile/desktop, plugin, or mixed system
-5. Find entry points:
-   - startup commands, app root, route/menu definitions, API clients, service entrypoints, state roots, tests
-6. Trace the main path:
-   - input/user action -> routing/dispatch -> components/services -> external dependency -> state/output
-7. Identify conventions:
-   - directory layout, naming, service/type patterns, state usage, style, error handling, permissions, testing
-8. Evaluate verification:
-   - commands available, commands actually run, what they prove, what remains unverified
-9. Produce the guide:
-   - overview, stack, architecture, key directories, core flows, development path, risks, open questions, newcomer reading path
+1. 仅在必要时澄清目标：入门、架构报告、开发指南、调试地图、重构规划、审计或交接。
+2. 使用快速只读方式盘点仓库：
+   - 顶层文件和目录
+   - 文档、manifest、lockfile、配置、脚本、测试、CI、容器、环境模板
+   - 需要跳过的生成物、vendor、缓存、构建目录
+3. 识别技术栈：
+   - 语言、框架、包管理器、运行时、构建工具
+   - 基础设施和部署相关文件
+4. 判断项目形态：
+   - 前端、后端、全栈、库、CLI、monorepo、数据/机器学习、基础设施、移动/桌面、插件或混合系统
+5. 找入口点：
+   - 启动命令、应用根、路由/菜单定义、API client、服务入口、状态根、测试入口
+6. 追踪主路径：
+   - 输入/用户动作 -> 路由/分发 -> 组件/服务 -> 外部依赖 -> 状态/输出
+7. 识别开发约定：
+   - 目录布局、命名、服务/类型模式、状态使用、样式、错误处理、权限、测试
+8. 评估验证情况：
+   - 可用命令、实际执行命令、已证明内容、仍未验证内容
+9. 生成指南：
+   - 概览、技术栈、架构、关键目录、核心流程、开发路径、风险、开放问题、新人阅读路线
 
-## Reference Loading
+## 参考文件加载
 
-Load only the reference needed for the current task:
+只加载当前任务需要的参考文件：
 
-- For the step-by-step checklist, read `references/analysis-checklist.md`.
-- For report structures and reusable templates, read `references/output-templates.md`.
-- For frontend, Next.js, React, Vue, API clients, routing, state, permissions, and UI projects, read `references/frontend-projects.md`.
-- For security/auth/permission/secret-sensitive analysis, read `references/security-review.md`.
+- 分步骤检查清单：读取 `references/analysis-checklist.md`。
+- 报告结构和复用模板：读取 `references/output-templates.md`。
+- 前端、Next.js、React、Vue、API client、路由、状态、权限和 UI 项目：读取 `references/frontend-projects.md`。
+- 安全、认证、权限、密钥敏感分析：读取 `references/security-review.md`。
 
-## Baseline Discovery
+## 基线发现命令
 
-Prefer these read-only commands when available:
+优先使用这些只读命令：
 
 ```bash
 rg --files
@@ -72,7 +72,7 @@ ls -la
 cat README.md 2>/dev/null | head -80
 ```
 
-PowerShell equivalents:
+PowerShell 等价命令：
 
 ```powershell
 Get-ChildItem -Force
@@ -80,47 +80,47 @@ Get-ChildItem -Recurse -Depth 2 -File | Select-Object -First 120 FullName
 Get-Content README.md -TotalCount 80
 ```
 
-Inspect scripts before running them. Do not run install, update, format, codegen, migration, seed, deploy, apply, destroy, or production-contacting commands unless explicitly requested or clearly safe.
+运行脚本前先检查脚本内容。除非用户明确要求或可以确认安全，不运行安装、升级、格式化、代码生成、迁移、种子数据、部署、apply、destroy 或会连接生产环境的命令。
 
-## Evidence Labels
+## 证据标签
 
-Use labels when helpful:
+必要时使用以下标签：
 
-- **Observed**: confirmed by reading files.
-- **Documented**: stated in docs, not independently verified.
-- **Runtime-verified**: confirmed by command/test/API output.
-- **Inferred**: reasonable conclusion from structure or names.
-- **Open**: needs user, backend, ops, or runtime confirmation.
+- **已观察**：通过读取文件确认。
+- **文档声明**：文档中写明，但未独立验证。
+- **运行验证**：通过命令、测试或 API 输出确认。
+- **推断**：由结构、命名或调用关系得出的合理结论。
+- **待确认**：需要用户、后端、运维或运行环境确认。
 
-## Default Output
+## 默认输出
 
-For standard project guides, include:
+标准项目指南应包含：
 
-1. Evidence summary
-2. Project overview
-3. Technology stack
-4. Directory and key file map
-5. Startup and runtime path
-6. Architecture and core flow
-7. Core modules and responsibilities
-8. State, contracts, and external dependencies
-9. Development workflow and conventions
-10. Testing and verification
-11. Risks and open questions
-12. Recommended next steps
-13. Newcomer reading path
+1. 证据摘要
+2. 项目概览
+3. 技术栈
+4. 目录和关键文件地图
+5. 启动和运行路径
+6. 架构和核心流程
+7. 核心模块与职责
+8. 状态、契约和外部依赖
+9. 开发工作流与约定
+10. 测试和验证
+11. 风险和开放问题
+12. 推荐下一步
+13. 新人阅读路线
 
-For reviews, lead with risks. For debugging, lead with symptoms and isolation plan. For handoff, lead with what works, what is blocked, and what should not be changed yet.
+如果是代码审查，先列风险。如果是调试任务，先列症状和隔离计划。如果是交接文档，先说明已可用内容、阻塞项，以及暂不建议修改的部分。
 
-## Completion Criteria
+## 完成标准
 
-Before finalizing, ensure the analysis answers or labels open:
+收尾前应回答或标记待确认：
 
-- What is this project and what value does it provide?
-- How is it installed, started, built, tested, and deployed or packaged?
-- Where are the main entrypoints and runtime boundaries?
-- What are the most important data/control flows?
-- Where do config, state, schemas/contracts, and external dependencies live?
-- What has been verified by commands or runtime behavior?
-- What are the highest-risk areas and safest next actions?
-- What should a newcomer read first?
+- 这是什么项目，提供什么价值？
+- 如何安装、启动、构建、测试、部署或打包？
+- 主要入口和运行边界在哪里？
+- 最重要的数据流和控制流是什么？
+- 配置、状态、schema/契约和外部依赖在哪里？
+- 哪些内容已经通过命令或运行行为验证？
+- 最高风险区域和最稳妥的下一步是什么？
+- 新人应该先读哪些文件？

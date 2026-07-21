@@ -1,4 +1,4 @@
 interface:
-  display_name: "Project Guide"
-  short_description: "Create evidence-backed project guides."
-  default_prompt: "Use $project-guide-skill to analyze this repository and produce a newcomer-oriented project guide with evidence, risks, and verification steps."
+  display_name: "项目指南"
+  short_description: "生成基于证据的项目入门与分析指南。"
+  default_prompt: "使用 $project-guide-skill 分析该仓库，生成面向新成员的项目指南，并包含证据、风险和验证步骤。"

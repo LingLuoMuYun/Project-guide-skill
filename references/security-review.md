@@ -1,42 +1,42 @@
-# Security and Permission Review
+# 安全和权限审查
 
-Use for authentication, authorization, secret handling, external action systems, dependency risk, or audit-oriented project analysis.
+用于认证、授权、密钥处理、外部动作系统、依赖风险，或审计导向的项目分析。
 
-## First Questions
+## 首要问题
 
-- What users, tenants, roles, resources, data, credentials, or external systems need protection?
-- Where are trust boundaries crossed?
-- How are users/services authenticated?
-- How is authorization enforced?
-- Where are secrets loaded, stored, logged, redacted, and passed to subprocesses?
-- What input is untrusted?
-- What dependencies and release paths affect the trusted build?
+- 哪些用户、租户、角色、资源、数据、凭据或外部系统需要保护？
+- 信任边界在哪里被跨越？
+- 用户或服务如何认证？
+- 授权如何执行？
+- 密钥在哪里加载、存储、记录、脱敏，以及传给子进程？
+- 哪些输入是不可信的？
+- 哪些依赖和发布路径会影响可信构建？
 
-## Locate
+## 需要定位
 
-- auth middleware, route guards, sessions, token handling
-- role/permission/menu/button checks
-- user, tenant, organization, and resource ownership models
-- upload handlers, parsers, serializers, validators
-- config loading and environment templates
-- logs, telemetry, and error reporting
-- external API clients and callbacks
-- dependency manifests, lockfiles, CI, release scripts, container images
+- auth middleware、路由守卫、session、token 处理
+- 角色、权限、菜单、按钮检查
+- 用户、租户、组织和资源归属模型
+- 上传处理、解析器、序列化器、校验器
+- 配置加载和环境模板
+- 日志、遥测和错误上报
+- 外部 API client 和回调
+- 依赖 manifest、lockfile、CI、发布脚本、容器镜像
 
-## Risk Areas
+## 风险区域
 
-- auth bypass from missing guard coverage
-- object-level authorization gaps
-- secrets committed, echoed, or logged
-- unsafe file paths, archive extraction, shell execution, template rendering, deserialization
-- open redirects or weak redirect validation
-- overbroad CORS, CSRF gaps, insecure cookies, risky token storage
-- dependency confusion, mutable action/image tags, unpinned releases
-- destructive actions without preview, approval, or audit logs
+- guard 覆盖缺失导致认证绕过
+- 对象级授权缺口
+- 密钥被提交、回显或记录
+- 不安全文件路径、压缩包解压、shell 执行、模板渲染、反序列化
+- 开放重定向或重定向校验薄弱
+- CORS 过宽、CSRF 缺口、不安全 cookie、危险 token 存储
+- 依赖混淆、可变 action/image tag、未固定版本发布
+- 破坏性操作缺少预览、确认或审计日志
 
-## Safety Rules
+## 安全规则
 
-- Do not print secrets, private keys, tokens, full connection strings, sensitive records, or exploit payloads.
-- Prefer defensive inspection and validation over exploit execution.
-- Do not run scanners, fuzzers, network probes, or credential tests unless explicitly requested and scoped.
-- Label security findings: confirmed, likely, possible, or open.
+- 不输出密钥、私钥、token、完整连接串、敏感记录或攻击载荷。
+- 优先做防御性检查和验证，不执行利用。
+- 除非用户明确要求并限定范围，不运行扫描器、fuzzer、网络探测或凭据测试。
+- 安全结论要标记：已确认、很可能、可能或待确认。

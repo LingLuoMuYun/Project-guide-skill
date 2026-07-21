@@ -1,8 +1,8 @@
-# Output Templates
+# 输出模板
 
-Adapt section order to the user's goal.
+根据用户目标调整章节顺序。
 
-## Standard Project Guide
+## 标准项目指南
 
 ```markdown
 # 项目：[名称]
@@ -43,11 +43,11 @@ Adapt section order to the user's goal.
 
 ## 5. 架构
 
-[必要时附 Mermaid 或 ASCII 图。]
+必要时附 Mermaid 或 ASCII 图。
 
 ## 6. 主数据/控制流
 
-[逐步说明核心链路。]
+逐步说明核心链路。
 
 ## 7. 核心模块
 
@@ -101,10 +101,10 @@ Adapt section order to the user's goal.
 3. ...
 ```
 
-## Quick Triage
+## 快速分诊
 
 ```markdown
-# 快速项目分诊
+# 快速项目分析
 
 ## 这是什么
 
@@ -121,7 +121,7 @@ Adapt section order to the user's goal.
 ## 下一步命令
 ```
 
-## Technical Handoff
+## 技术交接
 
 ```markdown
 # 技术交接
