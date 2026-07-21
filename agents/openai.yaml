@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Guide"
+  short_description: "Create evidence-backed project guides."
+  default_prompt: "Use $project-guide-skill to analyze this repository and produce a newcomer-oriented project guide with evidence, risks, and verification steps."
