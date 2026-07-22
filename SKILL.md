@@ -7,7 +7,7 @@ description: 分析、理解、记录或审计软件项目/仓库，并生成面
 
 该技能用于快速接手陌生项目：把仓库整理成实用的项目学习指南，并生成一个交互式 HTML 页面供团队成员日常使用。重点回答：项目如何运行、应该从哪里开始读、主流程如何工作、目录结构怎么组织的、每个关键文件做什么、埋点在哪里、开发约定是什么、哪些地方容易出问题、还有哪些信息需要确认。
 
-该技能面向 `LingLuoMuYun/Project-guide-skill` 仓库。Codex 技能名保留为 `project-guide-skill`，以满足技能命名规则。
+该技能适用于任何 AI Agent（Claude Code、Codex、Cursor、ChatGPT、Gemini 等）。在支持 skill 机制的平台上可以直接作为 skill 加载；在其他平台上可以将 `PROMPT.md` 的内容作为系统提示词复制使用。
 
 ## 操作原则
 
@@ -244,3 +244,13 @@ Get-Content README.md -TotalCount 80
 - 新人应该先读哪些文件？
 - **快速导航索引是否已构建？**
 - **HTML 项目指南（project-guide/index.html）是否已生成？**
+
+## 跨平台使用
+
+### 在支持 Skill 的平台上（Claude Code / Codex）
+
+将本仓库克隆到 skill 目录，直接通过 `/project-guide-skill` 或 `$project-guide-skill` 调用。参考文件（`references/`）会被按需加载。
+
+### 在其他 Agent 上（ChatGPT、Cursor、Gemini 等）
+
+使用 `PROMPT.md`——这是一份自包含的通用 prompt，不依赖 `references/` 目录。将其中 `---` 分隔线之间的内容复制到任何 AI Agent 的对话中即可使用。

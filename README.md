@@ -1,6 +1,6 @@
 # 项目指南技能
 
-这是一个 Codex 技能，用于**快速接手陌生项目**——分析软件项目并生成面向新成员的项目指南。它强调先观察、再判断，并把关键结论绑定到文件路径、配置、命令输出或测试结果等证据上。
+这是一个**跨平台 AI Agent 技能**，用于**快速接手陌生项目**——分析软件项目并生成面向新成员的项目指南。它强调先观察、再判断，并把关键结论绑定到文件路径、配置、命令输出或测试结果等证据上。支持 Claude Code、Codex、Cursor、ChatGPT、Gemini 等任何 AI Agent。
 
 分析完成后，在目标项目根目录自动创建 `project-guide/index.html`——一个自包含的交互式 HTML 指南，可**离线使用**，包含目录树可视化、快速导航、Mermaid 架构图、埋点清单和新人阅读路线。
 
@@ -21,10 +21,11 @@
 
 ```text
 .
-├── SKILL.md
+├── SKILL.md                      # 技能主说明（适合有 skill 机制的平台）
+├── PROMPT.md                     # ★ 通用 prompt（适合在任何 AI Agent 中复制使用）
 ├── README.md
 ├── agents/
-│   └── openai.yaml
+│   └── openai.yaml               # Codex 界面配置（Codex 专属）
 └── references/
     ├── analysis-checklist.md      # 通用仓库分析检查清单
     ├── output-templates.md        # Markdown 和 HTML 输出模板
@@ -39,8 +40,9 @@
 
 | 路径 | 作用 |
 | --- | --- |
-| `SKILL.md` | 技能主说明，定义使用场景、分析流程、输出要求和完成标准。 |
-| `agents/openai.yaml` | Codex 界面展示信息和默认提示词。 |
+| `SKILL.md` | 技能主说明，定义使用场景、分析流程、输出要求和完成标准。在 Claude Code / Codex 等有 skill 机制的平台上直接作为 skill 加载。 |
+| `PROMPT.md` | ★ **通用 prompt**：自包含的完整分析指令，可复制粘贴到任何 AI Agent（ChatGPT、Claude、Gemini、Kimi 等）中使用，不依赖 reference 文件。 |
+| `agents/openai.yaml` | Codex 界面展示信息和默认提示词（仅 Codex 平台需要）。 |
 | `references/analysis-checklist.md` | 通用仓库分析检查清单（含结构树、代码分析、埋点、导航）。 |
 | `references/output-templates.md` | Markdown 项目指南、快速分析、技术交接及 HTML 指南的输出模板。 |
 | `references/project-structure.md` | 项目结构树分析规范、代码文件摘要模板、依赖关系图和快速导航索引。 |
@@ -75,26 +77,49 @@
 
 ## 简单分析
 
-该项目不是传统运行型应用，而是一个面向 Codex 的技能包。它的核心价值在于把项目分析过程标准化：先做只读发现，识别技术栈和入口，再追踪核心流程，梳理项目结构树，分析关键代码文件，识别埋点和追踪，最后输出带证据、风险、快速导航和下一步建议的中文报告，并生成交互式 HTML 项目指南。
+该项目不是传统运行型应用，而是一个**跨平台 AI Agent 技能包**。它的核心价值在于把项目分析过程标准化：先做只读发现，识别技术栈和入口，再追踪核心流程，梳理项目结构树，分析关键代码文件，识别埋点和追踪，最后输出带证据、风险、快速导航和下一步建议的中文报告，并生成交互式 HTML 项目指南。
 
-当前内容以文档和提示词为主，没有构建脚本、测试脚本或运行时依赖。主要维护点是 `SKILL.md` 和 `references/` 下的清单模板。
+当前内容以文档和提示词为主，没有构建脚本、测试脚本或运行时依赖。主要维护点是 `SKILL.md`、`PROMPT.md` 和 `references/` 下的清单模板。
 
 ## 使用方式
 
-在 Codex 中调用：
+### 在 Claude Code 中（Skill 机制）
+
+克隆本仓库到 `.claude/skills/` 目录（或通过设置配置 skill 路径），然后使用：
+
+```text
+/project-guide-skill 分析当前项目，生成面向新成员的项目指南。
+```
+
+### 在 Codex 中
 
 ```text
 使用 $project-guide-skill 分析该仓库，生成面向新成员的项目指南。
 ```
 
-也可以指定分析深度：
+指定分析深度：
 
 ```text
 使用 $project-guide-skill 对该仓库做 deep 分析，重点追踪核心请求流程和测试覆盖缺口。
 ```
 
-聚焦特定需求：
+### 在任何 AI Agent 中（通用方式）⭐
+
+1. 打开 [PROMPT.md](PROMPT.md)，复制 `---` 分隔线之间的全部内容
+2. 粘贴到任意 AI 对话中（Claude、ChatGPT、Cursor、Gemini、Kimi、通义千问等）
+3. 告诉 AI 你的项目路径：
 
 ```text
-使用 $project-guide-skill 分析该前端项目，重点梳理项目结构树、识别埋点和生成 HTML 指南。
+请分析 /path/to/my-project 这个项目。
+```
+
+### 聚焦特定需求
+
+```text
+# Claude Code
+/project-guide-skill 分析该前端项目，重点梳理项目结构树、识别埋点和生成 HTML 指南。
+
+# 通用方式（在任何 Agent 中）
+[粘贴 PROMPT.md 内容后]
+请分析这个 Vue3 后台管理项目，只关注项目结构树和埋点识别，不需要生成 HTML 指南。
 ```
