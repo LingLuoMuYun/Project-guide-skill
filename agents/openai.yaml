@@ -1,7 +1,7 @@
 interface:
   display_name: "项目指南"
-  short_description: "快速接手陌生项目：浅层生成 Markdown 报告，深层生成交互式 HTML 指南（含关键业务代码展示与分析、Mermaid 架构图、埋点清单）。"
-  default_prompt: "使用 $project-guide-skill 分析该仓库。先向用户提供浅层/深层两种模式选择，然后按用户选择生成对应的项目指南。"
+  short_description: "快速接手陌生项目：三种模式——浅层 Markdown 报告、深层交互式 HTML（含代码分析）、聚焦分析（针对指定模块深入剖析）。"
+  default_prompt: "使用 $project-guide-skill 分析该仓库。先向用户提供浅层/深层/聚焦三种模式选择，然后按用户选择生成对应的项目指南。如用户已指定聚焦分析目标模块，直接进入聚焦模式。"
   keywords:
     - 快速入手
     - 快速上手
@@ -25,5 +25,11 @@ interface:
     - 结构树
     - 目录树
     - 入门指南
+    - 聚焦分析
+    - 针对模块
+    - 聚焦功能
+    - 深入分析
     - project guide
     - onboarding
+    - focus on
+    - deep dive

@@ -4,6 +4,7 @@
 
 - **浅层分析** → 输出 `project-guide/project-guide.md`（Markdown 报告）
 - **深层分析** → 输出 `project-guide/index.html`（交互式 HTML 指南，含代码展示与分析）
+- **聚焦分析** → 输出 `project-guide/{模块名}-focus.md` 或 `.html`（指定模块的深入剖析）
 
 ## 浅层分析模板 → `project-guide/project-guide.md`
 
@@ -195,6 +196,93 @@
 ## 直接风险/未知项
 
 ## 下一步命令
+```
+
+## 聚焦分析模板 → `project-guide/{模块名}-focus.md`
+
+```markdown
+# {模块名} — 聚焦分析报告
+
+## 1. 模块定位
+
+- **所属项目**：
+- **模块名称**：
+- **核心职责**：（一句话：这个模块解决什么问题）
+- **边界定义**：（哪些文件属于本模块）
+
+## 2. 文件清单
+
+| 文件 | 职责 | 优先级 | 行数 |
+| --- | --- | --- | --- |
+| `src/modules/auth/LoginPage.tsx` | 登录页面组件 | P0 | ~150 |
+| `src/modules/auth/AuthService.ts` | 认证服务层 | P0 | ~200 |
+| ... | ... | ... | ... |
+
+## 3. 模块内部结构
+
+（ASCII 目录树 + 文件间引用关系图）
+
+```text
+src/modules/auth/
+├── LoginPage.tsx         ★ P0 登录页面入口
+├── RegisterPage.tsx      ● P1 注册页面
+├── AuthService.ts        ★ P0 认证服务（核心）
+├── useAuth.ts            ● P1 认证状态 Hook
+├── AuthGuard.tsx         ● P1 路由守卫组件
+└── types.ts              ● P2 类型定义
+```
+
+## 4. 外部依赖关系
+
+**本模块依赖（导入的外部模块）：**
+| 外部模块 | 用途 | 被哪些文件引用 |
+| --- | --- | --- |
+| `src/utils/request.ts` | HTTP 实例 | AuthService.ts |
+| `src/store/userStore.ts` | 用户状态 | useAuth.ts, LoginPage.tsx |
+
+**被外部模块依赖（被谁导入）：**
+| 外部模块 | 使用了什么 | 影响程度 |
+| --- | --- | --- |
+| `src/router/index.ts` | AuthGuard | 高（所有路由都依赖守卫） |
+| `src/components/UserMenu.tsx` | useAuth | 中 |
+
+## 5. 逐文件代码分析
+
+### `AuthService.ts`
+
+> （按聚焦分析标准：完整职责、核心导出、关键代码片段 + 逐行分析、内部依赖、被依赖方、风险点）
+
+### `LoginPage.tsx`
+
+> （同上）
+
+### ...
+
+## 6. 模块数据流追踪
+
+（Mermaid 时序图 + 关键步骤说明）
+
+## 7. 模块埋点清单
+
+| 事件名 | 类别 | 所在文件:行 | 参数 | 状态 |
+| --- | --- | --- | --- | --- |
+
+## 8. 风险和技术债
+
+| 风险 | 位置 | 影响 | 建议 |
+| --- | --- | --- | --- |
+
+## 9. 修改影响范围评估
+
+| 变更类型 | 影响的外部文件 | 风险等级 | 建议 |
+| --- | --- | --- | --- |
+| 修改 AuthService 接口 | 4 个页面 + 2 个 Hook | 中 | 先加类型测试 |
+| 修改 token 存储方式 | 整个应用的认证链路 | 高 | 需要全链路回归 |
+
+## 10. 推荐下一步
+
+- 短期：
+- 中期：
 ```
 
 ## 技术交接（Markdown）
