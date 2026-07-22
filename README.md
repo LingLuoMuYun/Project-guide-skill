@@ -59,6 +59,8 @@
     ├── tracking-analytics.md      # 埋点与追踪分析方法和清单模板
     ├── html-guide-template.md     # HTML 项目指南模板和 CSS 规范
     ├── frontend-projects.md       # 前端项目专项分析
+    ├── backend-projects.md        # 后端/API/微服务专项分析
+    ├── monorepo-projects.md       # Monorepo 项目专项分析
     └── security-review.md         # 安全、认证、权限审查清单
 ```
 

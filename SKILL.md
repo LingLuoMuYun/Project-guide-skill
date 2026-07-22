@@ -253,6 +253,8 @@ triggers:
 - 埋点与追踪分析：`references/tracking-analytics.md`
 - HTML 指南模板和样式：`references/html-guide-template.md`
 - 前端项目专项：`references/frontend-projects.md`
+- 后端项目专项：`references/backend-projects.md`
+- Monorepo 项目专项：`references/monorepo-projects.md`
 - 安全审查：`references/security-review.md`
 
 ## 证据标签
