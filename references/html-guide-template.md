@@ -107,7 +107,150 @@ HTML 指南应包含以下章节（根据实际分析结果增减）：
 - Mermaid 图表：核心流程图
 - 分层说明
 
-### 5. 核心模块详解
+### 5. 代码展示与分析 ⭐（深层模式核心章节）
+这是深层 HTML 指南区别于浅层 Markdown 报告的关键差异点。每段代码使用独立的展示面板：
+
+#### 面板结构
+```
+┌─────────────────────────────────────────────┐
+│ 📄 文件路径:行号范围                  [复制] │ ← 代码头部（文件路径 + 复制按钮）
+├─────────────────────────────────────────────┤
+│  1 │ // 实际项目代码                       │ ← 代码内容区（带行号）
+│  2 │ export function login(params) {       │
+│  3 │   const res = await request.post(    │
+│  4 │     '/api/auth/login', params        │
+│  5 │   );                                  │
+│  6 │   if (res.code === 0) {              │
+│  7 │     setToken(res.data.token);         │
+│  8 │     userStore.setUser(res.data.user); │
+│  9 │   }                                   │
+│ 10 │   return res;                         │
+│ 11 │ }                                      │
+├─────────────────────────────────────────────┤
+│ 🔍 代码分析                                │ ← 分析注释区（浅蓝背景区分）
+│                                             │
+│ 功能：发送登录请求，成功后存储 token 并    │
+│       更新全局用户状态                      │
+│                                             │
+│ 逐行说明：                                  │
+│ · L1: 异步函数声明，接收登录凭据参数       │
+│ · L2-4: 调用封装的 HTTP 实例发送 POST      │
+│ · L5-8: 响应码为 0 表示成功，执行两项操作  │
+│   → setToken：将 token 写入持久化存储      │
+│   → userStore.setUser：更新全局状态        │
+│   ⚠ 注意：两个操作无事务保证，需关注顺序   │
+│ · L10: 返回完整响应给上层调用方            │
+│                                             │
+│ 输入：{ username, password, captcha? }     │
+│ 输出：{ code, data: { token, user }, msg } │
+│ 调用方：LoginPage.vue, AuthModal.vue       │
+│ ⚠ 注意：未处理网络超时和断网情况           │
+└─────────────────────────────────────────────┘
+```
+
+#### 代码提取规则
+
+**必须提取的代码类型：**
+- 入口文件初始化逻辑（应用创建、插件注册、全局配置）
+- 路由表定义（完整路由配置）
+- API 服务层（2-5 个核心接口实现）
+- 状态管理（Store/Context 的核心结构定义）
+- 埋点调用（实际 track/logEvent 调用代码）
+- 核心业务流程（1-3 个关键函数/组件）
+- 复杂或易出错的逻辑段
+
+**每段代码必须附带的分析：**
+- 功能概述（一句话）
+- 逐行/逐段说明（关键行的解释）
+- 输入/输出（类型和含义）
+- 调用方列表（谁在使用这段代码）
+- 注意事项（边界条件、已知问题、性能考量）
+- ⚠ 风险标记（如适用）
+
+**安全原则：**
+- ❌ 不提取：密钥、Token、密码、完整连接串、完整用户敏感数据
+- ✅ 可以提取：函数签名、模块结构、业务逻辑、API 路径、配置键名
+
+#### CSS 代码面板样式
+
+```css
+/* === Code Panel === */
+.code-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 20px 0;
+  overflow: hidden;
+}
+.code-panel .code-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.code-panel .code-header .file-icon { margin-right: 6px; }
+.code-panel .code-header .file-path {
+  flex: 1;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: var(--text-secondary);
+}
+.code-panel .code-header .copy-btn {
+  padding: 2px 10px;
+  font-size: 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+.code-panel .code-header .copy-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+.code-panel pre.code-content {
+  margin: 0;
+  padding: 16px;
+  background: var(--code-bg);
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.6;
+  counter-reset: line;
+}
+.code-panel pre.code-content code {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.code-panel .code-analysis {
+  padding: 16px;
+  background: var(--analysis-bg);
+  border-top: 2px solid var(--accent);
+}
+.code-panel .code-analysis .analysis-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+.code-panel .code-analysis .analysis-body {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+.code-panel .code-analysis .note {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fef3c7;
+  border-left: 3px solid var(--warning);
+  border-radius: 0 4px 4px 0;
+  font-size: 13px;
+}
+[data-theme="dark"] .code-panel .code-analysis .note {
+  background: #422006;
+  border-left-color: #f59e0b;
+  color: #fcd34d;
+}
+```
+
+### 6. 核心模块详解
 - 每个模块一个卡片
 - 包含：职责、关键文件、API 列表、依赖关系
 - 折叠式详情

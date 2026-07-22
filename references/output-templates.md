@@ -1,8 +1,11 @@
 # 输出模板
 
-根据用户目标调整章节顺序。分析完成后，除了生成 Markdown 报告外，还应生成 HTML 项目指南。
+根据用户选择的分析模式输出不同的产物：
 
-## 标准项目指南（Markdown）
+- **浅层分析** → 输出 `project-guide.md`（Markdown 报告）
+- **深层分析** → 输出 `project-guide/index.html`（交互式 HTML 指南，含代码展示与分析）
+
+## 浅层分析模板 → `project-guide.md`
 
 ```markdown
 # 项目：[名称]
@@ -220,7 +223,7 @@
 ## 建议下一步
 ```
 
-## HTML 项目指南
+## HTML 项目指南（深层分析产物）
 
 分析完成后，在目标项目根目录创建 `project-guide/index.html`。
 
