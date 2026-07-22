@@ -6,7 +6,7 @@
 
 | 模式 | 产物 | 特点 |
 | --- | --- | --- |
-| 📄 **浅层分析** | `project-guide.md` | 快速生成 Markdown 报告，适合快速了解项目概况 |
+| 📄 **浅层分析** | `project-guide/project-guide.md` | 快速生成 Markdown 报告，适合快速了解项目概况 |
 | 🌐 **深层分析** ⭐ | `project-guide/index.html` | 交互式 HTML 指南，**含关键业务代码展示与逐行分析**、Mermaid 架构图、可搜索埋点表格、主题切换 |
 
 激活技能后，AI 会先让你选择浅层还是深层模式，无需提前决定。

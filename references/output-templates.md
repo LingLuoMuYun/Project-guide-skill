@@ -2,10 +2,10 @@
 
 根据用户选择的分析模式输出不同的产物：
 
-- **浅层分析** → 输出 `project-guide.md`（Markdown 报告）
+- **浅层分析** → 输出 `project-guide/project-guide.md`（Markdown 报告）
 - **深层分析** → 输出 `project-guide/index.html`（交互式 HTML 指南，含代码展示与分析）
 
-## 浅层分析模板 → `project-guide.md`
+## 浅层分析模板 → `project-guide/project-guide.md`
 
 ```markdown
 # 项目：[名称]

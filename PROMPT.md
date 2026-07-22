@@ -36,7 +36,7 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📄 选项 1：浅层分析（快速生成 Markdown 报告）
-   输出：project-guide.md
+   输出：project-guide/project-guide.md
    内容：技术栈 · 目录结构 · 入口点 · 核心流程
          模块职责 · 开发约定 · 埋点清单 · 风险 · 阅读路线
    适合：快速了解概况 · 交接概要 · 初次接触
@@ -118,7 +118,7 @@
 
 ---
 
-## 选项 1：浅层分析 → 生成 project-guide.md
+## 选项 1：浅层分析 → 生成 project-guide/project-guide.md
 
 对项目做摘要级分析，在目标项目根目录生成 **一个 Markdown 文件**。
 
@@ -170,7 +170,7 @@
 （推荐阅读顺序）
 ```
 
-完成后告知用户：已生成 `project-guide.md`，可直接用编辑器打开。
+完成后告知用户：已生成 `project-guide/project-guide.md`，可直接用编辑器打开。
 
 ---
 

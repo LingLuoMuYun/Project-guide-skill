@@ -56,7 +56,7 @@ triggers:
 请选择分析深度：
 
 **1. 浅层分析（快速生成 Markdown 报告）**
-- 输出：`project-guide.md` 文件
+- 输出：`project-guide/project-guide.md` 文件
 - 内容：技术栈、目录结构、入口点、核心流程、模块职责、开发约定、风险、阅读路线
 - 适合：快速了解项目概况、交接概要、初次接触
 
@@ -70,7 +70,7 @@ triggers:
 
 用户选择后，按对应模式执行。用户没有选择时，默认执行深层分析。
 
-## 模式一：浅层分析 → 生成 `project-guide.md`
+## 模式一：浅层分析 → 生成 `project-guide/project-guide.md`
 
 ### 分析范围
 
@@ -83,7 +83,7 @@ triggers:
 
 ### 输出
 
-在目标项目根目录生成 **一个 Markdown 文件**：`project-guide.md`。
+在目标项目根目录生成 **一个 Markdown 文件**：`project-guide/project-guide.md`。
 
 ### 章节结构
 
@@ -225,14 +225,14 @@ triggers:
 11. 评估验证情况。
 12. **构建快速导航索引**。
 13. **按所选模式输出**：
-    - 浅层 → Markdown 报告 `project-guide.md`
+    - 浅层 → Markdown 报告 `project-guide/project-guide.md`
     - 深层 → **提取关键业务代码** → 逐段分析 → 填充 HTML 模板 → 写入 `project-guide/index.html`
 
 ## 分析深度参考
 
 | 元素 | 浅层 | 深层 |
 | --- | --- | --- |
-| 输出产物 | `project-guide.md` | `project-guide/index.html` |
+| 输出产物 | `project-guide/project-guide.md` | `project-guide/index.html` |
 | 项目结构树 | ✅ | ✅ |
 | 核心流程追踪 | ✅ | ✅ |
 | 埋点清单 | ✅ 简要表格 | ✅ 可搜索表格 |
@@ -287,7 +287,7 @@ cat README.md 2>/dev/null | head -80
 - 关键代码文件是否已生成摘要？
 - 埋点事件是否已搜索并整理？
 - 快速导航索引是否已构建？
-- **浅层模式**：`project-guide.md` 是否已写入目标项目根目录？
+- **浅层模式**：`project-guide/project-guide.md` 是否已写入目标项目根目录？
 - **深层模式**：关键业务代码是否已提取并逐段分析？`project-guide/index.html` 是否已生成？
 
 ## 跨平台使用
