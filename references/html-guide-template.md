@@ -19,15 +19,16 @@
     │       ├── overview.js         # 1. 项目概览
     │       ├── quickstart.js       # 2. 快速开始
     │       ├── structure.js        # 3. 项目结构树
-    │       ├── architecture.js     # 4. 架构概览
-    │       ├── code-analysis.js    # 5. 代码展示与分析 ⭐（深层核心）
-    │       ├── modules.js          # 6. 核心模块详解
-    │       ├── dataflow.js         # 7. 数据流追踪
-    │       ├── tracking.js         # 8. 埋点事件清单
-    │       ├── workflow.js         # 9. 开发工作流
-    │       ├── roadmap.js          # 10. 新人阅读路线
-    │       ├── risks.js            # 11. 风险和注意事项
-    │       └── appendix.js         # 12. 附录
+	    │       ├── concept-map.js      # 4. 概念地图 🧭（业务概念→代码位置）
+    │       ├── architecture.js     # 5. 架构概览
+    │       ├── code-analysis.js    # 6. 代码展示与分析 ⭐（深层核心）
+    │       ├── modules.js          # 7. 核心模块详解
+    │       ├── dataflow.js         # 8. 数据流追踪
+    │       ├── tracking.js         # 9. 埋点事件清单
+    │       ├── workflow.js         # 10. 开发工作流
+    │       ├── roadmap.js          # 11. 新人阅读路线
+    │       ├── risks.js            # 12. 风险和注意事项
+    │       └── appendix.js         # 13. 附录
     └── extensions/
         └── README.md               # 扩展开发指南
 ```
@@ -468,6 +469,34 @@ window.__PROJECT_DATA__ = {
   },
 
   // ==========================================
+  // 概念地图（concept-map section 使用）🧭
+  // ==========================================
+  conceptMap: {
+    /** Mermaid 概念关系图（LR 方向），节点为业务概念，边为依赖/数据流关系。null 表示无概念地图 */
+    mermaidDef: 'graph LR
+  Auth[用户认证] -->|授权| Permission[权限控制]
+  Auth -->|写入| UserStore[用户状态]
+  Order[订单管理] -->|发起| Payment[支付流程]',
+    /** 概念详情列表 */
+    concepts: [
+      {
+        id: 'auth',
+        name: '用户认证',
+        description: '处理用户登录、注册、Token 刷新、SSO 对接',
+        priority: 'P0',
+        files: [
+          { path: 'src/pages/Login/', desc: '登录页面' },
+          { path: 'src/services/authService.ts', desc: '认证 API 服务' },
+          { path: 'src/store/userStore.ts', desc: '用户状态管理' },
+          { path: 'src/hooks/useAuth.ts', desc: '认证 Hook' }
+        ],
+        relatedConcepts: ['permission', 'user-profile']
+      }
+      // ... 更多概念
+    ]
+  },
+
+  // ==========================================
   // 架构图（architecture section 使用）
   // ==========================================
   architecture: {
@@ -692,6 +721,7 @@ window.__PROJECT_DATA__ = {
   <script src="js/sections/overview.js"></script>
   <script src="js/sections/quickstart.js"></script>
   <script src="js/sections/structure.js"></script>
+  <script src="js/sections/concept-map.js"></script>
   <script src="js/sections/architecture.js"></script>
   <script src="js/sections/code-analysis.js"></script>
   <script src="js/sections/modules.js"></script>
@@ -726,6 +756,8 @@ window.__PROJECT_DATA__ = {
  *   7. Mermaid Diagrams
  *   8. Search Results
  *   9. Responsive
+ *   10. Concept Map
+ *   11. Print
  *   10. Print
  */
 
@@ -1019,7 +1051,36 @@ tr:hover{background:var(--accent-light)}
 }
 
 /* ============================================================
-   10. Print
+   10. Concept Map
+   ============================================================ */
+.concept-grid{
+  display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;margin:16px 0;
+}
+.concept-card{
+  scroll-margin-top:80px;transition:box-shadow .3s;
+}
+.concept-card .file-link{
+  color:var(--accent);text-decoration:none;
+}
+.concept-card .file-link:hover{text-decoration:underline}
+.concept-card .file-link code{
+  font-family:'SF Mono','Fira Code',monospace;font-size:12px;
+  background:var(--code-bg);padding:1px 6px;border-radius:3px;
+}
+.related-tag{
+  display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;
+  background:var(--accent-light);color:var(--accent);
+  text-decoration:none;margin:1px 2px;transition:background .15s;
+}
+.related-tag:hover{background:var(--accent);color:#fff}
+/* Mermaid 概念图节点可点击 */
+.concept-grid .mermaid-wrapper + * {margin-top:20px}
+@media(max-width:768px){
+  .concept-grid{grid-template-columns:1fr}
+}
+
+/* ============================================================
+   11. Print
    ============================================================ */
 @media print{
   .sidebar,.top-bar,.overlay,.page-footer{display:none}
@@ -1199,7 +1260,126 @@ ProjectGuide.registerSection({
 });
 ```
 
-### 5.4 `js/sections/architecture.js` — 架构概览
+|
+
+### 5.4 `js/sections/concept-map.js` — 概念地图 🧭
+
+```javascript
+/** Section: 概念地图 🧭 — 业务概念→代码位置的映射 */
+ProjectGuide.registerSection({
+  id: 'concept-map',
+  title: '概念地图',
+  icon: '🧭',
+  priority: 35,
+  render: function(container, data) {
+    var h = ProjectGuide.helpers;
+    var cm = data.conceptMap || {};
+    var concepts = cm.concepts || [];
+    var html = '';
+
+    // --- 说明 ---
+    html += '<p style="margin-bottom:16px;color:var(--text-secondary)">' +
+            '从业务概念出发理解项目。点击图中的概念节点或下方卡片，快速定位相关代码。' +
+            '</p>';
+
+    // --- Mermaid 概念关系图 ---
+    if (cm.mermaidDef) {
+      html += '<div class="mermaid-wrapper">';
+      html += '<div class="mermaid">' + h.escapeHtml(cm.mermaidDef) + '</div>';
+      html += '</div>';
+    }
+
+    // --- 概念详情卡片 ---
+    if (concepts.length) {
+      html += '<h3>📋 概念详情</h3>';
+      html += '<div class="concept-grid">';
+
+      concepts.forEach(function(c) {
+        var badgeClass = (c.priority === 'P0') ? 'tag-red' :
+                         (c.priority === 'P1') ? 'tag-yellow' : 'tag-gray';
+
+        html += '<div class="card concept-card" id="concept-' + h.escapeHtml(c.id) + '">';
+
+        // 名称 + 优先级
+        html += '<div class="card-title">' + h.escapeHtml(c.name) +
+                ' <span class="tag ' + badgeClass + '">' + h.escapeHtml(c.priority || '') + '</span>' +
+                '</div>';
+
+        // 描述
+        if (c.description) {
+          html += '<p style="margin-bottom:10px">' + h.escapeHtml(c.description) + '</p>';
+        }
+
+        // 关键文件列表
+        if (c.files && c.files.length) {
+          html += '<div style="font-size:13px"><strong>📂 关键文件：</strong></div>';
+          html += '<ul style="margin:4px 0 10px;padding-left:18px;font-size:13px">';
+          c.files.forEach(function(f) {
+            html += '<li><a href="#section-structure" class="file-link" title="' + h.escapeHtml(f.desc || '') + '">' +
+                    '<code>' + h.escapeHtml(f.path) + '</code>' +
+                    (f.desc ? ' — ' + h.escapeHtml(f.desc) : '') +
+                    '</a></li>';
+          });
+          html += '</ul>';
+        }
+
+        // 关联概念标签
+        if (c.relatedConcepts && c.relatedConcepts.length) {
+          html += '<div style="margin-top:8px">';
+          html += '<span style="font-size:12px;color:var(--text-secondary)">🔗 关联：</span> ';
+          c.relatedConcepts.forEach(function(rid) {
+            var relatedConcept = concepts.find(function(x) { return x.id === rid; });
+            var relatedName = relatedConcept ? relatedConcept.name : rid;
+            html += '<a href="#concept-' + h.escapeHtml(rid) + '" class="related-tag">' +
+                    h.escapeHtml(relatedName) + '</a> ';
+          });
+          html += '</div>';
+        }
+
+        html += '</div>'; // .concept-card
+      });
+
+      html += '</div>'; // .concept-grid
+    } else {
+      html += '<p style="color:var(--text-secondary)">（未识别业务概念）</p>';
+    }
+
+    container.innerHTML = html;
+
+    // 初始化 Mermaid 图并添加点击事件
+    if (cm.mermaidDef && typeof mermaid !== 'undefined') {
+      try {
+        mermaid.run({ nodes: [container.querySelector('.mermaid')] }).then(function() {
+          var svg = container.querySelector('.mermaid svg');
+          if (svg) {
+            svg.style.cursor = 'default';
+            concepts.forEach(function(c) {
+              var textEls = svg.querySelectorAll('text');
+              textEls.forEach(function(t) {
+                if (t.textContent.indexOf(c.name) !== -1) {
+                  var parentGroup = t.closest('g');
+                  if (parentGroup) {
+                    parentGroup.style.cursor = 'pointer';
+                    parentGroup.addEventListener('click', function() {
+                      var target = document.getElementById('concept-' + c.id);
+                      if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        target.style.boxShadow = '0 0 0 3px var(--accent)';
+                        setTimeout(function() { target.style.boxShadow = ''; }, 2000);
+                      }
+                    });
+                  }
+                }
+              });
+            });
+          }
+        }).catch(function() {});
+      } catch(e) {}
+    }
+  }
+});
+```
+### 5.5 `js/sections/architecture.js` — 架构概览
 
 ```javascript
 /** Section: 架构概览 */
@@ -1245,7 +1425,7 @@ ProjectGuide.registerSection({
 });
 ```
 
-### 5.5 `js/sections/code-analysis.js` — 代码展示与分析 ⭐（深层核心）
+### 5.6 `js/sections/code-analysis.js` — 代码展示与分析 ⭐（深层核心）
 
 ```javascript
 /** Section: 代码展示与分析 ⭐ */
@@ -1327,7 +1507,7 @@ ProjectGuide.registerSection({
 });
 ```
 
-### 5.6 `js/sections/modules.js` — 核心模块详解
+### 5.7 `js/sections/modules.js` — 核心模块详解
 
 ```javascript
 /** Section: 核心模块详解 */
@@ -1383,7 +1563,7 @@ ProjectGuide.registerSection({
 });
 ```
 
-### 5.7 `js/sections/dataflow.js` — 数据流追踪
+### 5.8 `js/sections/dataflow.js` — 数据流追踪
 
 ```javascript
 /** Section: 数据流追踪 */
@@ -1429,7 +1609,7 @@ ProjectGuide.registerSection({
 });
 ```
 
-### 5.8 `js/sections/tracking.js` — 埋点事件清单
+### 5.9 `js/sections/tracking.js` — 埋点事件清单
 
 ```javascript
 /** Section: 埋点事件清单 */
@@ -1501,7 +1681,7 @@ ProjectGuide.registerSection({
 });
 ```
 
-### 5.9 `js/sections/workflow.js` — 开发工作流
+### 5.10 `js/sections/workflow.js` — 开发工作流
 
 ```javascript
 /** Section: 开发工作流 */
@@ -1537,7 +1717,7 @@ ProjectGuide.registerSection({
 });
 ```
 
-### 5.10 `js/sections/roadmap.js` — 新人阅读路线
+### 5.11 `js/sections/roadmap.js` — 新人阅读路线
 
 ```javascript
 /** Section: 新人阅读路线 */
@@ -1572,7 +1752,7 @@ ProjectGuide.registerSection({
 });
 ```
 
-### 5.11 `js/sections/risks.js` — 风险和注意事项
+### 5.12 `js/sections/risks.js` — 风险和注意事项
 
 ```javascript
 /** Section: 风险和注意事项 */
@@ -1614,7 +1794,7 @@ ProjectGuide.registerSection({
 });
 ```
 
-### 5.12 `js/sections/appendix.js` — 附录
+### 5.13 `js/sections/appendix.js` — 附录
 
 ```javascript
 /** Section: 附录 */
@@ -1744,6 +1924,7 @@ ProjectGuide.registerSection({
 
 ## 扩展灵感
 
+- 🧭 **概念地图**：业务概念 → 代码位置的可视化映射（Mermaid 关系图 + 详情卡片）
 - 🔌 **API 文档**：Swagger/OpenAPI 规格展示
 - 🗄️ **数据库 Schema**：表结构 ER 图（Mermaid）
 - ✅ **测试覆盖率**：测试统计和覆盖率可视化
@@ -1773,9 +1954,9 @@ Agent 在执行深层分析时按以下步骤生成文件：
    | 1 | `css/guide.css` | 复制上述 CSS 模板，无需修改 |
    | 2 | `js/guide-core.js` | 复制上述核心框架模板，无需修改 |
    | 3 | `js/guide-data.js` | **根据分析结果填充数据** |
-   | 4-15 | `js/sections/*.js` | 每个 section 文件使用上述模板，数据字段即为 `data.xxx` |
-   | 16 | `index.html` | 复制上述模板，替换 `{项目名称}` 和 `{生成日期}` |
-   | 17 | `extensions/README.md` | 复制上述扩展指南 |
+   | 4-16 | `js/sections/*.js` | 每个 section 文件使用上述模板，数据字段即为 `data.xxx` |
+   | 17 | `index.html` | 复制上述模板，替换 `{项目名称}` 和 `{生成日期}` |
+   | 18 | `extensions/README.md` | 复制上述扩展指南 |
 
 3. **告知用户**
    > 已生成 `project-guide/` 目录，包含交互式项目指南。
@@ -1801,7 +1982,7 @@ Agent 在执行深层分析时按以下步骤生成文件：
 
 ## 注意事项
 
-- **文件总数**：深层分析生成约 17 个文件，总体积通常 < 300KB（不含 Mermaid CDN）
+- **文件总数**：深层分析生成约 18 个文件，总体积通常 < 300KB（不含 Mermaid CDN）
 - **Mermaid CDN**：作为可选依赖，无网络时图表区降级为 `<pre>` 静态文本
 - **数据安全**：guide-data.js 中不得包含密钥、Token、连接串等敏感信息
 - **路径兼容**：所有引用使用相对路径（`js/...`、`css/...`），兼容 `file://` 协议

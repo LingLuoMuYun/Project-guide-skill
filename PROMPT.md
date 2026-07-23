@@ -42,9 +42,9 @@
          模块职责 · 开发约定 · 埋点清单 · 风险 · 阅读路线
    适合：快速了解概况 · 交接概要 · 初次接触
 
-🌐 选项 2：深层分析（生成交互式 HTML 指南）⭐ 推荐
-   输出：project-guide/ 目录（含 index.html + css/js/sections/extensions，约 17 个文件）
-   内容：浅层全部 + 关键业务代码展示与逐行分析
+🌐 选项 2：深层分析（两阶段：即时骨架 → 按需深入）⭐ 推荐
+   输出：Phase 1 项目骨架卡片（秒出）+ Phase 2 按需生成 project-guide/ 目录
+   内容：先秒出技术栈/入口/结构/业务领域概览，再按你选择的方向深入
          + Mermaid 架构图 + 交互式目录树 + 可搜索埋点表格
          + 快速导航 + 暗/亮主题切换 + 模块化可扩展架构
    适合：深入理解项目 · 团队 onboarding · 长期维护参考
@@ -115,6 +115,23 @@ rg --files | grep -v -E '(node_modules|\.git|dist|build|\.next|vendor|__pycache_
 
 根据文件数判定规模等级（🟢<150 / 🟡150-400 / 🔴400-1000 / ⚫1000+），后续所有步骤按「大型项目优化策略」调整分析深度。
 
+### 0b. Phase 1 即时扫描（深层模式专属）⭐
+
+选择选项 2（深层分析）后，必须先执行 Phase 1 即时扫描。并行执行以下 7 个任务，10-30 秒内输出**项目骨架卡片**给用户：
+
+```bash
+# 并行任务（全部同时执行）：
+# 1. rg --files | grep -v ... | wc -l          → 规模（已在上一步获得）
+# 2. cat README.md 2>/dev/null | head -60      → 项目身份
+# 3. cat package.json 2>/dev/null              → 技术栈与命令
+# 4. ls -la | grep -v ...                       → 顶层结构
+# 5. rg "^export (async )?(function|class|...)"  → 导出全景
+# 6. rg "^import.*from" --no-filename | head -100 → 依赖概览
+# 7. rg -n -i "gtag|mixpanel|sentry|track\(|..." → 埋点 SDK 检测
+```
+
+骨架卡片输出后附带 Phase 2 菜单（A=全部深入 / B=展开模块 / C=只看维度 / D=到此为止），等待用户选择。用户选 A 则继续以下完整流程。选 B/C/D 按对应路径执行，跳过后续通用流程。
+
 ### 1. 仓库盘点（只读）
 - 顶层文件和目录，跳过 node_modules/.git/dist/build/vendor/__pycache__/.next
 - 文档、manifest、lockfile、配置、脚本、测试、CI、容器、环境模板
@@ -138,6 +155,13 @@ rg --files | grep -v -E '(node_modules|\.git|dist|build|\.next|vendor|__pycache_
 - 绘制依赖方向图（自上而下的分层依赖）
 - 标记循环依赖、上帝模块、孤岛模块
 - **🟡 中型项目**：目录树深度 ≤4 层。**🔴 大型项目**：≤3 层。更深层折叠或省略。
+
+### 4b. 构建概念地图（深层/聚焦模式）
+- 从已识别的路由、服务、状态管理、目录名中提取业务概念
+- 为每个概念标注：名称、描述、优先级、关键文件路径、关联的其他概念
+- 生成 Mermaid graph LR 概念关系图（节点=业务概念，边=依赖/数据流）
+- 概念数量参考：🟢 3-5 个 / 🟡 5-10 个 / 🔴 8-15 个
+- 概念发现来源：路由表页面、services/ 服务模块、store/ 状态模块、核心目录名、README 中的功能描述
 
 ### 5. 代码文件内容分析
 对 P0/P1 文件生成摘要卡片：
@@ -228,11 +252,92 @@ rg -n -i "gtag|mixpanel|sensors|sentry|aegis|analytics|_hmt|growingio|track\(|tr
 
 ---
 
-## 选项 2：深层分析 → 生成 project-guide/ 目录
+## 选项 2：深层分析 → 两阶段分析（即时骨架 + 按需深入）
 
-浅层分析的全部内容 + 以下增强。不再生成单一 index.html，而是生成模块化目录结构。
+深层分析采用**两阶段分析**模式，解决"长时间等待却不知道 AI 在干什么"的痛点：
+- **Phase 1（即时扫描）**：10-30 秒内并行扫描，输出项目骨架卡片
+- **Phase 2（按需深入）**：用户看到骨架后，选择深入方向
 
-### 关键步骤：提取并分析业务代码
+### Phase 1：即时扫描（必须先执行）
+
+**目标**：10-30 秒内给出项目骨架，让用户快速确认"这是什么项目、用什么技术栈、入口在哪"。
+
+**并行扫描任务（全部同时执行，墙钟时间 = 最慢任务 ≈ 10-15 秒）：**
+
+```bash
+# 任务 1：项目规模（1-2秒）
+rg --files | grep -v -E '(node_modules|\.git|dist|build|\.next|vendor|__pycache__)' | wc -l
+
+# 任务 2：项目身份（1秒）
+cat README.md 2>/dev/null | head -60
+
+# 任务 3：技术栈与命令（1秒）
+cat package.json 2>/dev/null  # 或 pyproject.toml / go.mod / Cargo.toml / pom.xml
+
+# 任务 4：顶层结构（2秒）
+ls -la | grep -v -E '(node_modules|\.git|dist)'
+
+# 任务 5：导出全景（3-5秒，快速了解核心入口和模块）
+rg "^export (async )?(function|class|const|interface|type|default)" --no-filename | head -80
+
+# 任务 6：依赖概览（3-5秒，了解模块间引用关系）
+rg "^import.*from" --no-filename | head -100
+
+# 任务 7：埋点 SDK 检测（2-3秒）
+rg -n -i "gtag|mixpanel|sensors|sentry|aegis|analytics|_hmt|growingio|track\(|trackEvent|logEvent|reportEvent|pageView|sendEvent|useTrack|data-track" | head -30
+```
+
+**Phase 1 输出格式（项目骨架卡片，扫描完成后即刻展示）：**
+
+```markdown
+## 🏷️ 项目骨架 — {项目名称}
+
+| 属性 | 值 |
+| --- | --- |
+| 名称 | {从 package.json/README 提取} |
+| 类型 | {前端/后端/全栈/CLI/...} |
+| 规模 | {🟢🟡🔴⚫} · ~{文件数} 文件 |
+| 入口 | `{入口文件}` → `{路由/主模块}` |
+| 启动 | `{dev命令}` → {端口/URL} |
+| 构建 | `{build命令}` → `{输出目录}` |
+
+### 🛠️ 技术栈
+{技术标签云，每个标签标注证据文件}
+
+### 📁 顶层结构
+{顶层目录 + 说明（不超过 10 行）}
+
+### 🧩 发现的业务领域
+（从路由/服务/状态/目录名推断）
+1. {领域A} — {关键文件}
+2. {领域B} — {关键文件}
+...
+
+### ⚠ 风险标志
+- {未找到环境变量模板 / 有循环依赖 / 无测试 / ...}
+
+---
+🐍 以上扫描耗时约 {N} 秒。接下来想深入了解什么？
+
+🔍 **A. 全部深入** — 完整深层分析，生成交互式 HTML 指南（需 {估算耗时}）
+🧩 **B. 展开模块** — 选择感兴趣的领域深入分析（输入编号，如 `B 1,3`）
+📊 **C. 只看维度** — 只看特定维度：埋点/数据流/架构/代码分析
+✅ **D. 到此为止** — 骨架已提供足够信息，不需继续
+```
+
+### Phase 2：按需深入
+
+用户选择后按对应路径执行。如 60 秒内未响应则默认选 A。
+
+**选 A：全部深入** — 浅层分析的全部内容 + 以下增强。不再生成单一 index.html，而是生成模块化目录结构。
+
+**选 B：展开模块** — 对选定领域执行聚焦分析，圈定相关文件 → 逐文件深度分析 → 生成 `project-guide/{模块名}-focus.md` 或 `.html`。用户可多次选择，逐个展开不同模块。
+
+**选 C：只看维度** — 只生成指定维度的深度内容（如只看埋点/只看数据流/只看架构）。输出量比完整深层分析少 60-80%，速度快 3-5 倍。
+
+**选 D：到此为止** — Phase 1 骨架已提供足够信息快速了解项目。后续需要时可重新触发。
+
+### Phase 2A 关键步骤：提取并分析业务代码
 
 **必须从项目中读取并提取以下代码片段：**
 
@@ -265,7 +370,7 @@ rg -n -i "gtag|mixpanel|sensors|sentry|aegis|analytics|_hmt|growingio|track\(|tr
 
 ### HTML 输出结构
 
-生成位置：`{目标项目根目录}/project-guide/`（一个目录，约 17 个文件）
+生成位置：`{目标项目根目录}/project-guide/`（一个目录，约 18 个文件）
 
 **设计原则：** 采用 Section 注册表模式，每个分析章节是独立的 JS 文件，通过 `ProjectGuide.registerSection()` 注册。新增分析维度只需添加 section 文件 + 数据字段 + 一行 `<script>`。
 
@@ -278,19 +383,20 @@ project-guide/
 ├── js/
 │   ├── guide-core.js           # 核心框架：Section 注册表 + UI 工具
 │   ├── guide-data.js           # 项目分析数据（单一数据源 window.__PROJECT_DATA__）
-│   └── sections/               # Section 渲染器（12 个，可独立增删）
+│   └── sections/               # Section 渲染器（13 个，可独立增删）
 │       ├── overview.js         # 1. 项目概览
 │       ├── quickstart.js       # 2. 快速开始
 │       ├── structure.js        # 3. 项目结构树
-│       ├── architecture.js     # 4. 架构概览
-│       ├── code-analysis.js    # 5. 代码展示与分析 ⭐
-│       ├── modules.js          # 6. 核心模块详解
-│       ├── dataflow.js         # 7. 数据流追踪
-│       ├── tracking.js         # 8. 埋点事件清单
-│       ├── workflow.js         # 9. 开发工作流
-│       ├── roadmap.js          # 10. 新人阅读路线
-│       ├── risks.js            # 11. 风险和注意事项
-│       └── appendix.js         # 12. 附录
+│       ├── concept-map.js      # 4. 概念地图 🧭（业务概念→代码位置）
+│       ├── architecture.js     # 5. 架构概览
+│       ├── code-analysis.js    # 6. 代码展示与分析 ⭐
+│       ├── modules.js          # 7. 核心模块详解
+│       ├── dataflow.js         # 8. 数据流追踪
+│       ├── tracking.js         # 9. 埋点事件清单
+│       ├── workflow.js         # 10. 开发工作流
+│       ├── roadmap.js          # 11. 新人阅读路线
+│       ├── risks.js            # 12. 风险和注意事项
+│       └── appendix.js         # 13. 附录
 └── extensions/
     └── README.md               # 扩展开发指南
 ```
@@ -369,8 +475,10 @@ guide-data.js → window.__PROJECT_DATA__ → 各 section.render(container, data
 
 ### 完成标准
 
+- **Phase 1 即时扫描已完成**（深层模式），项目骨架卡片已展示给用户，Phase 2 菜单已提供
 - **项目规模检测已完成**，分析深度已按规模调整
-- 已生成 `project-guide/` 目录，包含所有必需文件
+- （Phase 2A）已生成 `project-guide/` 目录，包含所有必需文件
+- 概念地图已构建（概念从路由/服务/状态提取，Mermaid 关系图已生成，详情卡片含关键文件）
 - `guide-data.js` 中已填充完整分析数据
 - HTML 中包含关键业务代码及其分析（🟢 5-7 段 / 🟡 3-5 段 / 🔴 2-3 段）
 - 所有代码段已移除敏感信息
