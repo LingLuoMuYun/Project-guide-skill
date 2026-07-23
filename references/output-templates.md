@@ -3,7 +3,7 @@
 根据用户选择的分析模式输出不同的产物：
 
 - **浅层分析** → 输出 `project-guide/project-guide.md`（Markdown 报告）
-- **深层分析** → 输出 `project-guide/index.html`（交互式 HTML 指南，含代码展示与分析）
+- **深层分析** → 输出 `project-guide/` 目录（交互式 HTML 指南，含代码展示与分析，约 17 个文件）
 - **聚焦分析** → 输出 `project-guide/{模块名}-focus.md` 或 `.html`（指定模块的深入剖析）
 
 ## 浅层分析模板 → `project-guide/project-guide.md`
@@ -313,48 +313,78 @@ src/modules/auth/
 
 ## HTML 项目指南（深层分析产物）
 
-分析完成后，在目标项目根目录创建 `project-guide/index.html`。
+深层分析不再生成单一 `index.html`，而是生成一个模块化的 **`project-guide/` 目录**。核心采用 **Section 注册表模式**：每个分析章节是独立文件，通过统一接口注册到核心框架。新增分析维度只需添加 section 文件 + 数据字段 + 一行 `<script>`。
 
 ### 目录结构
 
 ```text
 {目标项目根目录}/
 └── project-guide/
-    └── index.html    # 自包含的交互式项目指南
+    ├── index.html                  # 入口文件（薄壳，~50 行）
+    ├── css/
+    │   └── guide.css               # 所有样式（按节分区，含完整注释）
+    ├── js/
+    │   ├── guide-core.js           # 核心框架：Section 注册表 + UI 工具
+    │   ├── guide-data.js           # 项目分析数据（单一数据源）
+    │   └── sections/               # Section 渲染器（可独立增删）
+    │       ├── overview.js         # 1. 项目概览
+    │       ├── quickstart.js       # 2. 快速开始
+    │       ├── structure.js        # 3. 项目结构树
+    │       ├── architecture.js     # 4. 架构概览
+    │       ├── code-analysis.js    # 5. 代码展示与分析 ⭐（深层核心）
+    │       ├── modules.js          # 6. 核心模块详解
+    │       ├── dataflow.js         # 7. 数据流追踪
+    │       ├── tracking.js         # 8. 埋点事件清单
+    │       ├── workflow.js         # 9. 开发工作流
+    │       ├── roadmap.js          # 10. 新人阅读路线
+    │       ├── risks.js            # 11. 风险和注意事项
+    │       └── appendix.js         # 12. 附录
+    └── extensions/
+        └── README.md               # 扩展开发指南
 ```
 
 ### HTML 包含内容
 
-| 章节 | 内容 | 形式 |
+| 章节 | 内容 | 对应 Section |
 | --- | --- | --- |
-| 项目概览 | 名称、描述、技术栈标签 | 卡片 + 标签云 |
-| 快速开始 | 安装、启动、访问地址 | 命令块 + 一键复制 |
-| 项目结构树 | 带注释的完整目录树 | 可展开/折叠的交互树 |
-| 架构概览 | 系统架构和核心流程 | Mermaid 图表 |
-| 核心模块 | 每个模块的职责和接口 | 折叠面板 / 卡片 |
-| 数据流追踪 | 关键流程逐步说明 | Mermaid 时序图 |
-| 埋点清单 | 全部埋点事件 | 可搜索表格 |
-| 开发工作流 | 分支、规范、Review 流程 | 说明列表 |
-| 新人阅读路线 | 按角色推荐阅读顺序 | 步骤列表 |
-| 风险和注意事项 | 已知风险、缓解建议 | 表格 |
-| 附录 | 命令速查、环境变量、依赖 | 表格 |
+| 项目概览 | 名称、描述、技术栈标签云 | `overview.js` |
+| 快速开始 | 环境要求、命令 + 一键复制 | `quickstart.js` |
+| 项目结构树 | 带注释的完整目录树 + 依赖方向 | `structure.js` |
+| 架构概览 | 系统架构 Mermaid 图 + 分层说明 | `architecture.js` |
+| 代码展示与分析 ⭐ | 关键业务代码 + 逐行分析注释 | `code-analysis.js` |
+| 核心模块详解 | 每个模块的职责和接口 | `modules.js` |
+| 数据流追踪 | 关键流程 Mermaid 时序图 | `dataflow.js` |
+| 埋点事件清单 | 全部埋点 + 覆盖缺口 | `tracking.js` |
+| 开发工作流 | 分支策略、规范、Review 流程 | `workflow.js` |
+| 新人阅读路线 | 按角色推荐阅读顺序 | `roadmap.js` |
+| 风险和注意事项 | 已知风险、缓解建议 | `risks.js` |
+| 附录 | 命令速查、环境变量、名词解释 | `appendix.js` |
 
 ### HTML 功能要求
 
-- 左侧固定导航栏 + 右侧内容区
-- 实时全文搜索（搜索模块、文件、函数、埋点）
-- 暗色/亮色主题切换（偏好存储在 localStorage）
-- 响应式设计（桌面/平板/手机）
+- Section 注册表模式（`ProjectGuide.registerSection()`）：添加/删除章节无需改动核心
+- 左侧固定导航栏，自动从已注册 section 构建
+- 实时全文搜索（模块、文件、函数、埋点、代码）
+- 暗色/亮色主题切换（偏好存储在 localStorage，首次跟随系统）
+- 响应式设计（桌面/平板/手机，移动端汉堡菜单）
 - 交互式目录树（展开/折叠/全部展开/全部折叠）
-- 代码块一键复制
-- 导航跟随滚动高亮
-- 键盘快捷键（`Ctrl+K` 搜索、`Ctrl+/` 切换侧边栏）
+- 代码展示面板：文件路径 + 代码 + 逐行分析 + 一键复制
+- 导航跟随滚动高亮（Intersection Observer）
+- 键盘快捷键（`Ctrl+K` 搜索、`Ctrl+/` 侧边栏、`Esc` 关闭）
+- 所有 JS 通过 `<script src>` 加载，兼容 `file://` 协议
 
 ### 生成步骤
 
 1. 完成项目分析，收集所有数据
-2. 在目标项目根目录执行 `mkdir -p project-guide`
-3. 使用 `references/html-guide-template.md` 中的模板
-4. 将分析数据填充到 HTML 模板各章节
-5. 写入 `project-guide/index.html`
-6. 告知用户文件路径，建议用浏览器打开
+2. 创建目录结构：
+   ```bash
+   mkdir -p project-guide/css
+   mkdir -p project-guide/js/sections
+   mkdir -p project-guide/extensions
+   ```
+3. 使用 `references/html-guide-template.md` 中的各文件模板
+4. 按顺序写入文件（共约 17 个）：
+   - 模板文件直接复制：`guide.css`、`guide-core.js`、`index.html`、`extensions/README.md`
+   - 根据分析结果填充：`guide-data.js`（集中管理所有数据）
+   - 按项目实际情况调整：`js/sections/*.js`（有数据的 section 保留，无数据的可删除对应 `<script>` 标签）
+5. 告知用户文件路径，建议用浏览器打开 `project-guide/index.html`

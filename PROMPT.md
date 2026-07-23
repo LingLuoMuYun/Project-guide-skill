@@ -43,10 +43,10 @@
    适合：快速了解概况 · 交接概要 · 初次接触
 
 🌐 选项 2：深层分析（生成交互式 HTML 指南）⭐ 推荐
-   输出：project-guide/index.html
+   输出：project-guide/ 目录（含 index.html + css/js/sections/extensions，约 17 个文件）
    内容：浅层全部 + 关键业务代码展示与逐行分析
          + Mermaid 架构图 + 交互式目录树 + 可搜索埋点表格
-         + 快速导航 + 暗/亮主题切换
+         + 快速导航 + 暗/亮主题切换 + 模块化可扩展架构
    适合：深入理解项目 · 团队 onboarding · 长期维护参考
 
 🔍 选项 3：聚焦分析（针对特定模块/功能深入分析）
@@ -190,9 +190,9 @@
 
 ---
 
-## 选项 2：深层分析 → 生成 project-guide/index.html
+## 选项 2：深层分析 → 生成 project-guide/ 目录
 
-浅层分析的全部内容 + 以下增强。
+浅层分析的全部内容 + 以下增强。不再生成单一 index.html，而是生成模块化目录结构。
 
 ### 关键步骤：提取并分析业务代码
 
@@ -225,40 +225,59 @@
 
 **⚠️ 安全：** 不提取密钥、Token、密码、连接串、完整敏感数据。
 
-### HTML 页面结构
+### HTML 输出结构
 
-生成位置：`{目标项目根目录}/project-guide/index.html`
+生成位置：`{目标项目根目录}/project-guide/`（一个目录，约 17 个文件）
 
-必须包含的章节和功能：
+**设计原则：** 采用 Section 注册表模式，每个分析章节是独立的 JS 文件，通过 `ProjectGuide.registerSection()` 注册。新增分析维度只需添加 section 文件 + 数据字段 + 一行 `<script>`。
 
-**内容章节：**
-1. 项目概览（卡片 + 技术栈标签云）
-2. 快速开始（命令 + 一键复制）
-3. 项目结构树（交互式可展开/折叠目录树）
-4. 架构概览（Mermaid 图 + 分层说明）
-5. ⭐ 代码展示与分析（关键业务代码 + 逐段分析 — 深层模式核心章节）
-6. 核心模块详解（折叠式卡片）
-7. 数据流追踪（Mermaid 时序图）
-8. 埋点事件清单（可搜索表格）
-9. 开发工作流
-10. 新人阅读路线（分角色）
-11. 风险和注意事项
-12. 附录（命令速查、环境变量、依赖）
+**目录结构：**
+```
+project-guide/
+├── index.html                  # 入口文件（薄壳，加载其他资源）
+├── css/
+│   └── guide.css               # 所有样式（约 300 行，分 10 个区）
+├── js/
+│   ├── guide-core.js           # 核心框架：Section 注册表 + UI 工具
+│   ├── guide-data.js           # 项目分析数据（单一数据源 window.__PROJECT_DATA__）
+│   └── sections/               # Section 渲染器（12 个，可独立增删）
+│       ├── overview.js         # 1. 项目概览
+│       ├── quickstart.js       # 2. 快速开始
+│       ├── structure.js        # 3. 项目结构树
+│       ├── architecture.js     # 4. 架构概览
+│       ├── code-analysis.js    # 5. 代码展示与分析 ⭐
+│       ├── modules.js          # 6. 核心模块详解
+│       ├── dataflow.js         # 7. 数据流追踪
+│       ├── tracking.js         # 8. 埋点事件清单
+│       ├── workflow.js         # 9. 开发工作流
+│       ├── roadmap.js          # 10. 新人阅读路线
+│       ├── risks.js            # 11. 风险和注意事项
+│       └── appendix.js         # 12. 附录
+└── extensions/
+    └── README.md               # 扩展开发指南
+```
+
+**数据流：**
+```
+guide-data.js → window.__PROJECT_DATA__ → 各 section.render(container, data) → DOM
+```
 
 **功能要求：**
 - 左侧固定导航 + 右侧内容区 + 顶部搜索
+- 侧边栏自动从已注册 section 构建（无需手动维护）
 - 交互式目录树（展开/折叠/全部展开/全部折叠）
-- Mermaid 架构图/时序图（CDN: mermaid@10）
-- 代码展示面板：每段代码显示文件路径，代码后紧跟分析注释块
-- 代码块一键复制
+- Mermaid 架构图/时序图（CDN: mermaid@10，无网络时降级为静态文本）
+- 代码展示面板：文件路径 + 代码 + 逐行分析 + 一键复制
 - 全文搜索（模块/文件/函数/埋点/代码）
-- 暗色/亮色主题切换（偏好存 localStorage）
+- 暗色/亮色主题切换（偏好存 localStorage，首次跟随系统偏好）
 - 响应式布局（桌面/平板/手机）
 - 键盘快捷键：Ctrl+K 搜索 / Ctrl+/ 侧边栏 / Esc 关闭
+- Section 错误隔离：单个 section 渲染失败不影响其他
+- 兼容 file:// 协议：所有 JS 通过 `<script src>` 加载
 
 **代码展示面板样式规范：**
 
-每段代码使用以下结构：
+每段代码使用以下结构（在 `code-analysis.js` 中渲染）：
 ```html
 <div class="code-panel">
   <div class="code-header">
@@ -284,6 +303,14 @@
 </div>
 ```
 
+### 生成步骤
+
+1. 创建目录：`mkdir -p project-guide/css project-guide/js/sections project-guide/extensions`
+2. 复制模板文件（无需修改）：`css/guide.css`、`js/guide-core.js`、`index.html`、`extensions/README.md`
+3. 填充 `js/guide-data.js`：将所有分析结果写入 `window.__PROJECT_DATA__`
+4. 按需生成 `js/sections/*.js`：有数据的 section 保留，无数据的删除对应 `<script>` 标签
+5. 告知用户用浏览器打开 `project-guide/index.html`
+
 ### CSS 关键变量
 
 ```css
@@ -292,19 +319,20 @@
   --text-primary:#1e293b; --text-secondary:#64748b; --text-sidebar:#cbd5e1;
   --border:#e2e8f0; --accent:#3b82f6; --accent-hover:#2563eb;
   --success:#10b981; --warning:#f59e0b; --danger:#ef4444; --code-bg:#f1f5f9;
-  --analysis-bg:#f0f9ff;
+  --analysis-bg:#f0f9ff; --analysis-border:#bae6fd;
 }
 [data-theme="dark"] {
   --bg-primary:#0f172a; --bg-secondary:#1e293b; --bg-sidebar:#0c1222;
   --text-primary:#e2e8f0; --text-secondary:#94a3b8; --text-sidebar:#94a3b8;
   --border:#334155; --accent:#60a5fa; --accent-hover:#93bbfd;
-  --code-bg:#1e293b; --analysis-bg:#0c1a2e;
+  --code-bg:#1e293b; --analysis-bg:#0c1a2e; --analysis-border:#1e3a5f;
 }
 ```
 
 ### 完成标准
 
-- 已生成 `project-guide/index.html`
+- 已生成 `project-guide/` 目录，包含所有必需文件
+- `guide-data.js` 中已填充完整分析数据
 - HTML 中包含至少 3-7 段关键业务代码及其逐行分析
 - 所有代码段已移除敏感信息
 - 交互功能（搜索/目录树/主题切换/快捷键）可正常使用

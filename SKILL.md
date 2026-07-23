@@ -36,10 +36,10 @@ description: >-
    适合：快速了解项目概况 · 交接概要 · 初次接触
 
 🌐 选项 2：深层分析（生成交互式 HTML 指南）⭐ 推荐
-   输出：`project-guide/index.html`
+   输出：`project-guide/` 目录（含 index.html + css/js/sections/extensions）
    内容：浅层全部 + 关键业务代码展示与逐行分析
          + Mermaid 架构图 + 交互式目录树 + 可搜索埋点表格
-         + 快速导航 + 暗/亮主题切换
+         + 快速导航 + 暗/亮主题切换 + 模块化可扩展架构
    适合：深入理解项目 · 团队 onboarding · 长期维护参考
 
 🔍 选项 3：聚焦分析（针对特定模块/功能深入分析）
@@ -91,7 +91,11 @@ description: >-
 - 快速导航索引已构建
 - 文件已写入目标项目根目录
 
-## 模式二：深层分析 → 生成 `project-guide/index.html`
+## 模式二：深层分析 → 生成 `project-guide/` 目录
+
+深层分析不再生成单一文件，而是生成一个模块化的 **`project-guide/` 目录**。采用 **Section 注册表模式**：每个分析章节是独立的 JS 文件，通过 `ProjectGuide.registerSection()` 注册到核心框架。新增分析维度无需改动核心代码。
+
+> 完整模块化架构文档见 `references/html-guide-template.md`
 
 ### 分析范围
 
@@ -99,7 +103,7 @@ description: >-
 
 1. **关键业务代码提取**：从 P0/P1 文件中提取核心代码片段
 2. **代码逐行分析**：对提取的代码添加注释和分析说明
-3. **交互式 HTML**：生成完整的交互式项目指南页面
+3. **模块化交互式 HTML**：生成结构化的项目指南目录（约 17 个文件）
 
 ### 代码提取与分析要求（核心差异）
 
@@ -126,32 +130,52 @@ description: >-
 - 不提取完整的用户敏感数据处理逻辑
 - 可以提取模块声明、函数签名、业务逻辑结构
 
-### HTML 指南必须包含的章节
+### HTML 指南目录结构
 
-1. **项目概览** — 卡片式 + 技术栈标签云
-2. **快速开始** — 命令 + 一键复制
-3. **项目结构树** — 交互式可展开目录树
-4. **架构概览** — Mermaid 架构图 + 分层说明
-5. **代码展示与分析** ⭐ — 关键业务代码 + 逐段分析（深层模式核心章节）
-6. **核心模块详解** — 折叠式模块卡片
-7. **数据流追踪** — Mermaid 时序图
-8. **埋点事件清单** — 可搜索表格
-9. **开发工作流** — 规范、流程
-10. **新人阅读路线** — 分角色推荐
-11. **风险和注意事项**
-12. **附录** — 命令速查、环境变量、依赖清单
+深层分析产出为 `project-guide/` 目录，约 17 个文件：
+
+```text
+project-guide/
+├── index.html                  # 入口文件（薄壳，加载其他资源）
+├── css/guide.css               # 所有样式
+├── js/
+│   ├── guide-core.js           # 核心框架（Section 注册表 + UI 工具）
+│   ├── guide-data.js           # 项目分析数据（单一数据源）
+│   └── sections/               # Section 渲染器（可独立增删）
+│       ├── overview.js         # 1. 项目概览
+│       ├── quickstart.js       # 2. 快速开始
+│       ├── structure.js        # 3. 项目结构树
+│       ├── architecture.js     # 4. 架构概览
+│       ├── code-analysis.js    # 5. 代码展示与分析 ⭐
+│       ├── modules.js          # 6. 核心模块详解
+│       ├── dataflow.js         # 7. 数据流追踪
+│       ├── tracking.js         # 8. 埋点事件清单
+│       ├── workflow.js         # 9. 开发工作流
+│       ├── roadmap.js          # 10. 新人阅读路线
+│       ├── risks.js            # 11. 风险和注意事项
+│       └── appendix.js         # 12. 附录
+└── extensions/README.md        # 扩展开发指南
+```
+
+### HTML 核心架构
+
+- **Section 注册表模式**：每个章节通过 `ProjectGuide.registerSection({ id, title, icon, priority, render })` 注册。添加新分析维度只需新增 section 文件 + 数据字段 + 一行 `<script>` 标签。
+- **数据与表现分离**：`guide-data.js` 集中管理 `window.__PROJECT_DATA__`，section 文件只负责渲染。
+- **兼容 `file://` 协议**：所有 JS 通过 `<script src>` 加载，无需本地服务器。
+- 完整模板见 `references/html-guide-template.md`。
 
 ### HTML 功能要求
 
-- 左侧固定导航栏 + 右侧内容区 + 顶部搜索栏
+- 左侧固定导航栏自动从已注册 section 构建 + 顶部搜索栏
 - 交互式目录树（展开/折叠/全部展开/全部折叠）
-- Mermaid 架构图和时序图（CDN 加载 mermaid@10）
-- **代码展示面板**：代码块顶部显示文件路径，每段代码后紧跟分析注释块，hover 相关行高亮
+- Mermaid 架构图和时序图（CDN 加载 mermaid@10，无网络时降级为静态文本）
+- **代码展示面板**：代码块顶部显示文件路径，每段代码后紧跟分析注释块
 - 代码块一键复制
 - 全文搜索（模块/文件/函数/埋点/代码内容）
-- 暗色/亮色主题切换
-- 响应式布局
-- 键盘快捷键（Ctrl+K 搜索、Ctrl+/ 侧边栏）
+- 暗色/亮色主题切换（偏好存 localStorage，首次跟随系统）
+- 响应式布局（桌面/平板/手机）
+- 键盘快捷键（Ctrl+K 搜索、Ctrl+/ 侧边栏、Esc 关闭）
+- Section 隔离：一个章节渲染失败不影响其他章节
 
 ### 代码展示面板设计要求
 
@@ -314,14 +338,14 @@ project-guide/{模块名}-focus.html
 12. **构建快速导航索引**。
 13. **按所选模式输出**：
     - 浅层 → Markdown 报告 `project-guide/project-guide.md`
-    - 深层 → **提取关键业务代码** → 逐段分析 → 填充 HTML 模板 → 写入 `project-guide/index.html`
+    - 深层 → **提取关键业务代码** → 逐段分析 → 写入 `project-guide/` 目录（index.html + css/ + js/ + extensions/）
     - 聚焦 → **圈定模块边界** → 逐文件深度分析 → 写入 `project-guide/{模块名}-focus.md` 或 `.html`
 
 ## 分析深度参考
 
 | 元素 | 浅层 | 深层 | 聚焦 |
 | --- | --- | --- | --- |
-| 输出产物 | `project-guide/project-guide.md` | `project-guide/index.html` | `project-guide/{模块名}-focus.md` 或 `.html` |
+| 输出产物 | `project-guide/project-guide.md` | `project-guide/` 目录（约 17 个文件） | `project-guide/{模块名}-focus.md` 或 `.html` |
 | 分析范围 | 全项目 | 全项目 | 指定模块/功能 |
 | 分析深度 | 摘要级 | 详细级 | 逐文件逐行级 |
 | 项目结构树 | ✅ 全局 | ✅ 全局 | ✅ 模块级 |
@@ -383,7 +407,7 @@ cat README.md 2>/dev/null | head -80
 - 埋点事件是否已搜索并整理？
 - 快速导航索引是否已构建？
 - **浅层模式**：`project-guide/project-guide.md` 是否已写入目标项目根目录？
-- **深层模式**：关键业务代码是否已提取并逐段分析？`project-guide/index.html` 是否已生成？
+- **深层模式**：关键业务代码是否已提取并逐段分析？`project-guide/` 目录（含 index.html + css/js/sections/extensions）是否已全部生成？
 - **聚焦模式**：模块边界是否已圈定？是否逐文件完成深度分析？影响范围是否已评估？产物是否已写入 `project-guide/{模块名}-focus.md` 或 `.html`？
 
 ## 跨平台使用
