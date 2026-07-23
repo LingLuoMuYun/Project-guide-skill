@@ -70,6 +70,48 @@
 
 用户未明确选择时，默认执行深层分析（选项 2）。
 
+## 大型项目优化策略
+
+分析 300+ 文件的大型项目时，**核心原则：先快照、再聚焦、渐进深入。**
+
+### 第一步：项目规模检测（必须在所有分析前执行）
+
+```bash
+rg --files | grep -v -E '(node_modules|\.git|dist|build|\.next|vendor|__pycache__)' | wc -l
+```
+
+| 规模 | 文件数 | 策略 |
+| --- | --- | --- |
+| 🟢 小型 | < 150 | 全量分析，不做优化 |
+| 🟡 中型 | 150-400 | 智能采样，P1 每目录最多 5 个文件 |
+| 🔴 大型 | 400-1000 | 大幅采样 + 并行 + 代码提取 ≤3 段 |
+| ⚫ 超大型 | 1000+ | 快速概览 → 建议用户用聚焦分析逐模块深入 |
+
+### 第二步：按规模自适应调整
+
+- **🟡 中型**：P0 全读，P1 每目录 ≤5 个代表文件，P2 仅列文件名不读内容。深层分析代码提取 3-5 段，目录树 ≤4 层。
+- **🔴 大型**：P0 全读，P1 每目录 ≤3 个且仅读前 100 行。深层分析代码提取 2-3 段（仅入口+核心流程），目录树 ≤3 层，Mermaid 仅架构图。建议增量生成：首轮输出核心章节，再按需追加。
+- **⚫ 超大型**：直接执行浅层分析生成概览，建议用户选择聚焦模式深入关键模块。
+
+### 通用加速技巧
+
+1. **统一埋点搜索**：一条 grep 覆盖所有模式，避免 5-6 次全仓库扫描
+   ```bash
+   rg -n -i "gtag|mixpanel|sensors|sentry|aegis|analytics|_hmt|growingio|track\(|trackEvent|logEvent|reportEvent|pageView|sendEvent|useTrack|v-track|data-track"
+   ```
+2. **批量导出提取**：对 P1 文件用 grep 批量提取导出签名，而非逐个完整读取
+   ```bash
+   rg "^export (async )?(function|class|const|interface|type|default)" src/ --no-filename -n
+   ```
+3. **一次导入图**（聚焦模式）：一条命令构建完整导入图
+   ```bash
+   rg -n "^import.*from" --no-filename
+   ```
+4. **并行维度分析**：结构树、埋点搜索、入口分析互不依赖，可并行执行
+5. **头部分析**：大文件（>300 行）先读前 50-100 行
+6. **并行读取**：多个独立文件在同一轮并行读取
+7. **模板复用**：guide-core.js / guide.css / extensions/README.md 直接复制
+
 ## 操作原则
 
 - 先检查再下结论。区分：已观察事实、文档声明、运行验证、合理推断、待确认问题。
@@ -81,6 +123,14 @@
 - 面向中文项目默认输出中文报告。
 
 ## 分析流程（通用部分，三种模式都要执行）
+
+### 0. 项目规模检测（必须在所有分析前执行）⭐
+
+```bash
+rg --files | grep -v -E '(node_modules|\.git|dist|build|\.next|vendor|__pycache__)' | wc -l
+```
+
+根据文件数判定规模等级（🟢<150 / 🟡150-400 / 🔴400-1000 / ⚫1000+），后续所有步骤按「大型项目优化策略」调整分析深度。
 
 ### 1. 仓库盘点（只读）
 - 顶层文件和目录，跳过 node_modules/.git/dist/build/vendor/__pycache__/.next
@@ -104,19 +154,24 @@
 - 特殊标记：★ 入口、● 核心模块、▲ 配置、⚠ 风险
 - 绘制依赖方向图（自上而下的分层依赖）
 - 标记循环依赖、上帝模块、孤岛模块
+- **🟡 中型项目**：目录树深度 ≤4 层。**🔴 大型项目**：≤3 层。更深层折叠或省略。
 
 ### 5. 代码文件内容分析
-对每个 P0/P1 文件生成摘要卡片：
+对 P0/P1 文件生成摘要卡片：
 - 文件职责（一句话）
 - 核心导出（函数/类/组件/类型）
 - 内部依赖（引用了哪些项目模块）
 - 被依赖方（被哪些模块引用）
 - 关键逻辑说明
 - 潜在问题（技术债/性能/安全）
+- **🟡 中型项目**：P1 每目录 ≤5 个文件，P2 仅列文件名不读内容。
+- **🔴 大型项目**：P1 每目录 ≤3 个文件且仅读前 100 行，P2 仅列目录名。优先使用批量导出提取（`rg "^export"`）代替逐个读取。
 
 ### 6. 埋点与追踪识别
-使用 grep/ripgrep 搜索这些关键词：
-`gtag|mixpanel|sensors|sentry|aegis|analytics|_hmt|growingio|track\(|trackEvent|logEvent|pageView|reportEvent|sendEvent|useTrack|v-track|data-track`
+使用**一条统一 grep** 搜索（避免多次扫描同一仓库）：
+```bash
+rg -n -i "gtag|mixpanel|sensors|sentry|aegis|analytics|_hmt|growingio|track\(|trackEvent|logEvent|reportEvent|pageView|sendEvent|useTrack|v-track|data-track"
+```
 
 整理埋点事件清单：
 | 事件名 | 类别 | 触发时机 | 所在文件:行号 | 参数 | 状态 |
@@ -331,11 +386,13 @@ guide-data.js → window.__PROJECT_DATA__ → 各 section.render(container, data
 
 ### 完成标准
 
+- **项目规模检测已完成**，分析深度已按规模调整
 - 已生成 `project-guide/` 目录，包含所有必需文件
 - `guide-data.js` 中已填充完整分析数据
-- HTML 中包含至少 3-7 段关键业务代码及其逐行分析
+- HTML 中包含关键业务代码及其分析（🟢 5-7 段 / 🟡 3-5 段 / 🔴 2-3 段）
 - 所有代码段已移除敏感信息
 - 交互功能（搜索/目录树/主题切换/快捷键）可正常使用
+- **大型项目**：产出中已标注采样率和可后续深入的方向
 - 告知用户用浏览器打开 `project-guide/index.html`
 
 ---
