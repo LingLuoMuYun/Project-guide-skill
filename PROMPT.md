@@ -74,7 +74,7 @@
 
 分析 300+ 文件的大型项目时，**核心原则：先快照、再聚焦、渐进深入。**
 
-### 第一步：项目规模检测（必须在所有分析前执行）
+### 项目规模检测（必须在所有分析前执行）
 
 ```bash
 rg --files | grep -v -E '(node_modules|\.git|dist|build|\.next|vendor|__pycache__)' | wc -l
@@ -82,35 +82,18 @@ rg --files | grep -v -E '(node_modules|\.git|dist|build|\.next|vendor|__pycache_
 
 | 规模 | 文件数 | 策略 |
 | --- | --- | --- |
-| 🟢 小型 | < 150 | 全量分析，不做优化 |
-| 🟡 中型 | 150-400 | 智能采样，P1 每目录最多 5 个文件 |
-| 🔴 大型 | 400-1000 | 大幅采样 + 并行 + 代码提取 ≤3 段 |
-| ⚫ 超大型 | 1000+ | 快速概览 → 建议用户用聚焦分析逐模块深入 |
+| 🟢 小型 | < 150 | 全量分析 |
+| 🟡 中型 | 150-400 | 智能采样，P1 每目录 ≤5 文件 |
+| 🔴 大型 | 400-1000 | 大幅采样 + 代码提取 ≤3 段 + 增量生成 |
+| ⚫ 超大型 | 1000+ | 快速概览 → 建议聚焦分析逐模块深入 |
 
-### 第二步：按规模自适应调整
+### 核心加速技巧
 
-- **🟡 中型**：P0 全读，P1 每目录 ≤5 个代表文件，P2 仅列文件名不读内容。深层分析代码提取 3-5 段，目录树 ≤4 层。
-- **🔴 大型**：P0 全读，P1 每目录 ≤3 个且仅读前 100 行。深层分析代码提取 2-3 段（仅入口+核心流程），目录树 ≤3 层，Mermaid 仅架构图。建议增量生成：首轮输出核心章节，再按需追加。
-- **⚫ 超大型**：直接执行浅层分析生成概览，建议用户选择聚焦模式深入关键模块。
-
-### 通用加速技巧
-
-1. **统一埋点搜索**：一条 grep 覆盖所有模式，避免 5-6 次全仓库扫描
-   ```bash
-   rg -n -i "gtag|mixpanel|sensors|sentry|aegis|analytics|_hmt|growingio|track\(|trackEvent|logEvent|reportEvent|pageView|sendEvent|useTrack|v-track|data-track"
-   ```
-2. **批量导出提取**：对 P1 文件用 grep 批量提取导出签名，而非逐个完整读取
-   ```bash
-   rg "^export (async )?(function|class|const|interface|type|default)" src/ --no-filename -n
-   ```
-3. **一次导入图**（聚焦模式）：一条命令构建完整导入图
-   ```bash
-   rg -n "^import.*from" --no-filename
-   ```
+1. **统一埋点搜索**：`rg -n -i "gtag|mixpanel|sensors|...|track\(|trackEvent|..."` 一次完成
+2. **批量导出提取**：`rg "^export (async )?(function|class|const|...)" src/ --no-filename` 代替逐个读文件
+3. **一次导入图**：`rg -n "^import.*from" --no-filename` 构建完整依赖图
 4. **并行维度分析**：结构树、埋点搜索、入口分析互不依赖，可并行执行
-5. **头部分析**：大文件（>300 行）先读前 50-100 行
-6. **并行读取**：多个独立文件在同一轮并行读取
-7. **模板复用**：guide-core.js / guide.css / extensions/README.md 直接复制
+5. **模板直接复制**：guide-core.js / guide.css / extensions/README.md 无需修改
 
 ## 操作原则
 

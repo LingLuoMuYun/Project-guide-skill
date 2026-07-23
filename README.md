@@ -104,21 +104,19 @@ git clone <本仓库> .claude/skills/project-guide-skill
 
 ```text
 .
-├── SKILL.md                  # 技能主说明（skill 平台加载入口）
-├── PROMPT.md                 # ★ 通用 prompt（自包含，可复制到任何 AI Agent）
+├── SKILL.md                      # 技能主说明（skill 平台加载入口）
+├── PROMPT.md                     # ★ 通用 prompt（自包含，可复制到任何 AI Agent）
 ├── README.md
 ├── agents/
-│   └── openai.yaml           # Codex 界面配置
+│   └── openai.yaml               # Codex 界面配置
 └── references/
     ├── analysis-checklist.md      # 分析检查清单
     ├── output-templates.md        # MD / HTML 输出模板
     ├── project-structure.md       # 结构树分析与代码摘要规范
     ├── tracking-analytics.md      # 埋点与追踪分析方法
     ├── html-guide-template.md     # 模块化 HTML 架构：核心框架、Section 模板、CSS、扩展指南
-    ├── frontend-projects.md       # 前端项目专项
-    ├── backend-projects.md        # 后端/API/微服务专项
-    ├── monorepo-projects.md       # Monorepo 项目专项
-    └── security-review.md         # 安全审查清单
+    ├── project-types.md           # 项目形态专项：前端/后端/Monorepo/安全审查
+    └── large-projects.md          # 大型项目优化：规模分级、采样策略、加速技巧
 ```
 
 ---
