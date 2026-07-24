@@ -174,6 +174,9 @@
     initTreeInteraction();
     initKeyboardShortcuts();
     initScrollSpy();
+    initReadingProgress();
+    initBackToTop();
+    initCopyFeedback();
   }
 
   // --- 侧边栏切换 ---
@@ -205,6 +208,9 @@
       var allSections = document.querySelectorAll('.content > section');
       var navItems = document.querySelectorAll('.nav-item');
 
+      // 清除上一次的高亮
+      clearHighlights();
+
       if (!query) {
         // 恢复全部
         allSections.forEach(function(s) { s.style.display = ''; });
@@ -219,6 +225,8 @@
         if (text.indexOf(query) !== -1) {
           section.style.display = '';
           if (id) matchedIds[id] = true;
+          // 高亮匹配词
+          highlightInSection(section, query);
         } else {
           section.style.display = 'none';
         }
@@ -229,6 +237,55 @@
         nav.style.display = (sid && matchedIds[sid]) ? '' : 'none';
       });
     }, 200));
+  }
+
+  function clearHighlights() {
+    var highlights = document.querySelectorAll('.search-highlight');
+    for (var i = 0; i < highlights.length; i++) {
+      var el = highlights[i];
+      var parent = el.parentNode;
+      parent.replaceChild(document.createTextNode(el.textContent), el);
+      parent.normalize();
+    }
+  }
+
+  function highlightInSection(section, query) {
+    var walker = document.createTreeWalker(section, NodeFilter.SHOW_TEXT, null, false);
+    var textNodes = [];
+    while (walker.nextNode()) {
+      // 跳过已经高亮的、脚本、样式、输入框内的文本
+      var parent = walker.currentNode.parentNode;
+      if (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE' ||
+          parent.tagName === 'INPUT' || parent.tagName === 'TEXTAREA' ||
+          parent.classList.contains('search-highlight')) continue;
+      textNodes.push(walker.currentNode);
+    }
+    textNodes.forEach(function(node) {
+      var text = node.textContent.toLowerCase();
+      var idx = text.indexOf(query);
+      if (idx === -1) return;
+      // 只处理前 30 处匹配，避免性能问题
+      var count = 0;
+      var remaining = node.textContent;
+      var result = '';
+      var lastIdx = 0;
+      while ((idx = remaining.toLowerCase().indexOf(query)) !== -1 && count < 30) {
+        result += escapeHtmlText(remaining.substring(0, idx));
+        result += '<span class="search-highlight">' + escapeHtmlText(remaining.substring(idx, idx + query.length)) + '</span>';
+        remaining = remaining.substring(idx + query.length);
+        count++;
+      }
+      result += escapeHtmlText(remaining);
+      if (count > 0) {
+        var span = document.createElement('span');
+        span.innerHTML = result;
+        node.parentNode.replaceChild(span, node);
+      }
+    });
+  }
+
+  function escapeHtmlText(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   // --- 主题切换 ---
@@ -342,6 +399,79 @@
     });
   }
 
+  // --- 阅读进度条 ---
+  function initReadingProgress() {
+    var bar = document.getElementById('readingProgressBar');
+    if (!bar) return;
+    window.addEventListener('scroll', function() {
+      var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      var progress = docHeight > 0 ? Math.min((scrollTop / docHeight) * 100, 100) : 0;
+      bar.style.width = progress + '%';
+    }, { passive: true });
+  }
+
+  // --- 回到顶部按钮 ---
+  function initBackToTop() {
+    var btn = document.getElementById('backToTop');
+    if (!btn) return;
+
+    window.addEventListener('scroll', function() {
+      var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      if (scrollTop > 400) {
+        btn.classList.add('visible');
+      } else {
+        btn.classList.remove('visible');
+      }
+    }, { passive: true });
+
+    btn.addEventListener('click', function() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // --- 复制按钮反馈 ---
+  function initCopyFeedback() {
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('.copy-btn');
+      if (!btn) return;
+      var code = btn.getAttribute('data-code');
+      if (!code) return;
+
+      // 使用 Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(function() {
+          showCopyFeedback(btn);
+        }).catch(function() {
+          fallbackCopy(code, btn);
+        });
+      } else {
+        fallbackCopy(code, btn);
+      }
+    });
+
+    function fallbackCopy(text, btn) {
+      var textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try { document.execCommand('copy'); showCopyFeedback(btn); } catch(e) {}
+      document.body.removeChild(textarea);
+    }
+
+    function showCopyFeedback(btn) {
+      var originalText = btn.textContent;
+      btn.classList.add('copied');
+      btn.textContent = '✓ 已复制';
+      setTimeout(function() {
+        btn.classList.remove('copied');
+        btn.textContent = originalText;
+      }, 1500);
+    }
+  }
+
   // --- 工具函数 ---
   function debounce(fn, delay) {
     var timer;
@@ -352,12 +482,37 @@
     };
   }
 
+  // --- Mermaid 安全渲染（兼容异步加载）---
+  function runMermaid(containerEl) {
+    if (window.__MERMAID_READY__ && typeof mermaid !== 'undefined') {
+      try {
+        mermaid.run({ nodes: [containerEl.querySelector('.mermaid')] });
+      } catch(e) { /* 静默降级 */ }
+    } else if (typeof mermaid !== 'undefined') {
+      // Mermaid 已加载但尚未初始化（竞态）
+      try {
+        mermaid.run({ nodes: [containerEl.querySelector('.mermaid')] });
+      } catch(e) {}
+    } else {
+      // Mermaid 未加载，排队等待
+      window.__MERMAID_QUEUE__ = window.__MERMAID_QUEUE__ || [];
+      window.__MERMAID_QUEUE__.push(function() {
+        try {
+          if (typeof mermaid !== 'undefined') {
+            mermaid.run({ nodes: [containerEl.querySelector('.mermaid')] });
+          }
+        } catch(e) {}
+      });
+    }
+  }
+
   // ============================================================
   // 公开 API
   // ============================================================
   window.ProjectGuide = {
     registerSection: registerSection,
     init: init,
+    runMermaid: runMermaid,
     // 辅助工具（section 渲染时可用）
     helpers: {
       escapeHtml: function(str) {
@@ -367,7 +522,8 @@
           .replace(/>/g, '&gt;')
           .replace(/"/g, '&quot;');
       },
-      debounce: debounce
+      debounce: debounce,
+      runMermaid: runMermaid
     }
   };
 
@@ -681,18 +837,33 @@ window.__PROJECT_DATA__ = {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{项目名称} - 项目指南</title>
   <link rel="stylesheet" href="css/guide.css">
-  <!-- Mermaid CDN（可选；无网络时图表区域降级为静态文本） -->
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <!-- CDN 预连接（性能优化） -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <!-- Mermaid 异步加载，不阻塞首屏渲染 -->
   <script>
-    // Mermaid 初始化
-    document.addEventListener('DOMContentLoaded', function() {
+    // Mermaid 加载状态管理
+    window.__MERMAID_READY__ = false;
+    window.__MERMAID_QUEUE__ = [];
+    function onMermaidLoad() {
       if (typeof mermaid !== 'undefined') {
-        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+        mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+        window.__MERMAID_READY__ = true;
+        // 处理排队等待渲染的 Mermaid 图
+        window.__MERMAID_QUEUE__.forEach(function(fn) { try { fn(); } catch(e) {} });
+        window.__MERMAID_QUEUE__ = [];
       }
-    });
+    }
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"
+          onload="onMermaidLoad()" async></script>
 </head>
 <body>
+  <!-- ========== 阅读进度条 ========== -->
+  <div class="reading-progress" aria-hidden="true">
+    <div class="reading-progress-bar" id="readingProgressBar"></div>
+  </div>
+
   <!-- ========== 顶部工具栏 ========== -->
   <header class="top-bar">
     <button class="menu-toggle" id="menuToggle" aria-label="切换菜单">☰</button>
@@ -705,7 +876,7 @@ window.__PROJECT_DATA__ = {
   </header>
 
   <!-- ========== 左侧导航 ========== -->
-  <nav class="sidebar" id="sidebar">
+  <nav class="sidebar" id="sidebar" aria-label="目录导航">
     <div class="nav-section">
       <div class="nav-title">📋 快速导航</div>
       <div id="sidebarNav"></div>
@@ -722,6 +893,9 @@ window.__PROJECT_DATA__ = {
   <footer class="page-footer">
     <p>由 Project Guide Skill 生成 · {生成日期}</p>
   </footer>
+
+  <!-- ========== 回到顶部 ========== -->
+  <button class="back-to-top" id="backToTop" aria-label="返回顶部" title="返回顶部">↑</button>
 
   <!-- ============================================================
        脚本加载顺序：
@@ -770,19 +944,25 @@ window.__PROJECT_DATA__ = {
  *   5. Code Panels ⭐
  *   6. Tables
  *   7. Mermaid Diagrams
- *   8. Search Results
- *   9. Responsive
- *   10. Concept Map
- *   11. Print
- *   10. Print
+ *   8. Search
+ *   9. Reading Progress & Back-to-Top
+ *   10. Empty States
+ *   11. Focus Visible & Accessibility
+ *   12. Concept Map
+ *   13. Responsive
+ *   14. Print
  */
 
 /* ============================================================
    1. Reset & CSS Variables
    ============================================================ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans SC",sans-serif;background:var(--bg-primary);color:var(--text-primary);line-height:1.6}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans SC",sans-serif;
+  background:var(--bg-primary);color:var(--text-primary);line-height:1.7;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+}
 
 /* 亮色主题 */
 :root,[data-theme="light"]{
@@ -803,6 +983,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
   --code-bg:#f1f5f9;
   --analysis-bg:#f0f9ff;
   --analysis-border:#bae6fd;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.12);
+  --radius-sm:4px;
+  --radius:8px;
+  --radius-lg:12px;
+  --transition-fast:.15s ease;
+  --transition:.25s ease;
 }
 
 /* 暗色主题 */
@@ -821,6 +1009,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
   --code-bg:#1e293b;
   --analysis-bg:#0c1a2e;
   --analysis-border:#1e3a5f;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.2);
+  --shadow-md:0 4px 12px rgba(0,0,0,.3);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.4);
 }
 /* 暗色下调整 tag / note 颜色 */
 [data-theme="dark"] .tag-blue{background:#1e3a5f;color:#93bbfd}
@@ -828,6 +1019,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
 [data-theme="dark"] .tag-yellow{background:#78350f;color:#fcd34d}
 [data-theme="dark"] .tag-red{background:#7f1d1d;color:#fca5a5}
 [data-theme="dark"] .note{background:#422006;border-left-color:#f59e0b;color:#fcd34d}
+[data-theme="dark"] .empty-state{color:#64748b}
+[data-theme="dark"] .back-to-top{background:var(--bg-secondary);border-color:var(--border)}
 
 /* ============================================================
    2. Layout
@@ -838,38 +1031,51 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
   position:fixed;top:0;left:0;right:0;height:56px;
   background:var(--bg-primary);border-bottom:1px solid var(--border);
   display:flex;align-items:center;padding:0 16px;z-index:100;gap:12px;
+  box-shadow:var(--shadow-sm);
 }
 .top-bar h1{font-size:18px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top-bar .title-sub{font-weight:400;color:var(--text-secondary);font-size:14px;margin-left:4px}
-.menu-toggle{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-primary);padding:4px}
+.menu-toggle{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-primary);padding:4px;border-radius:var(--radius-sm);transition:background var(--transition-fast)}
+.menu-toggle:hover{background:var(--bg-secondary)}
 .header-tools{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
 .search-input{
-  padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;
+  padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;
   width:220px;background:var(--bg-secondary);color:var(--text-primary);
-  outline:none;transition:border-color .2s;
+  outline:none;transition:border-color var(--transition-fast),box-shadow var(--transition-fast);
 }
-.search-input:focus{border-color:var(--accent)}
-.theme-toggle{background:none;border:none;font-size:20px;cursor:pointer;padding:4px}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.search-input::placeholder{color:var(--text-secondary);opacity:.7}
+.theme-toggle{
+  background:none;border:none;font-size:20px;cursor:pointer;padding:4px 8px;
+  border-radius:var(--radius-sm);transition:background var(--transition-fast),transform var(--transition-fast);
+}
+.theme-toggle:hover{background:var(--bg-secondary);transform:scale(1.1)}
 
 /* --- Sidebar --- */
 .sidebar{
   position:fixed;top:56px;left:0;bottom:0;width:280px;
   background:var(--bg-sidebar);color:var(--text-sidebar);
-  overflow-y:auto;z-index:90;transition:transform .3s;
+  overflow-y:auto;overflow-x:hidden;z-index:90;transition:transform var(--transition);
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent;
 }
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-track{background:transparent}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
 .nav-section{padding:16px}
 .nav-title{
-  font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;
+  font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;
   color:#64748b;margin-bottom:8px;
 }
 .nav-item{
   display:flex;align-items:center;gap:8px;
   padding:8px 12px;color:var(--text-sidebar);text-decoration:none;
-  font-size:14px;border-radius:4px;cursor:pointer;transition:background .15s;
-  margin-bottom:2px;
+  font-size:14px;border-radius:var(--radius-sm);cursor:pointer;
+  transition:background var(--transition-fast),color var(--transition-fast);
+  margin-bottom:2px;outline:none;
 }
 .nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
 .nav-item.active{background:var(--accent);color:var(--text-sidebar-active)}
+.nav-item:focus-visible{box-shadow:inset 0 0 0 2px var(--accent)}
 .nav-icon{font-size:14px;width:20px;text-align:center;flex-shrink:0}
 
 /* --- Main Content --- */
@@ -884,6 +1090,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
 }
 .content h3{font-size:18px;margin:24px 0 12px;color:var(--text-primary)}
 .content h4{font-size:16px;margin:16px 0 8px;color:var(--text-secondary)}
+.content p{margin-bottom:10px}
+.content a{color:var(--accent);text-decoration:none;transition:color var(--transition-fast)}
+.content a:hover{color:var(--accent-hover);text-decoration:underline}
 
 /* --- Footer --- */
 .page-footer{
@@ -893,14 +1102,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
 }
 
 /* --- Overlay --- */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:89}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:89;backdrop-filter:blur(2px)}
 
 /* ============================================================
    3. Navigation — Tree
    ============================================================ */
 .tree-container{font-family:'SF Mono','Fira Code','Cascadia Code',monospace;font-size:13px;line-height:1.8}
 .tree-item{padding:2px 0}
-.tree-toggle{cursor:pointer;user-select:none;font-size:12px;margin-right:4px;display:inline-block;width:16px;text-align:center}
+.tree-toggle{
+  cursor:pointer;user-select:none;font-size:12px;margin-right:4px;
+  display:inline-block;width:16px;text-align:center;transition:transform var(--transition-fast);
+}
 .tree-children{padding-left:20px}
 .tree-label{display:inline}
 .tree-label .tree-name{font-weight:500}
@@ -918,22 +1130,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
 .tree-controls{margin-bottom:10px;display:flex;gap:8px}
 .tree-controls button{
   padding:4px 12px;font-size:12px;background:var(--bg-secondary);
-  border:1px solid var(--border);border-radius:4px;cursor:pointer;
-  color:var(--text-secondary);
+  border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;
+  color:var(--text-secondary);transition:all var(--transition-fast);
 }
 .tree-controls button:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tree-controls button:focus-visible{box-shadow:0 0 0 2px var(--accent);outline:none}
 
 /* ============================================================
    4. Cards & Tags
    ============================================================ */
 .card{
-  border:1px solid var(--border);border-radius:8px;padding:20px;
+  border:1px solid var(--border);border-radius:var(--radius);padding:20px;
   margin-bottom:16px;background:var(--bg-secondary);
+  transition:box-shadow var(--transition),transform var(--transition);
 }
+.card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
 .card-title{font-size:16px;font-weight:600;margin-bottom:8px}
+/* 可折叠卡片 */
+details.card{cursor:pointer}
+details.card summary{list-style:none}
+details.card summary::-webkit-details-marker{display:none}
+details.card summary::before{content:'▶ ';font-size:12px;transition:transform var(--transition-fast);display:inline-block}
+details.card[open] summary::before{transform:rotate(90deg)}
+details.card[open]{box-shadow:var(--shadow-sm)}
 
 /* Tags */
-.tag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500;margin:2px}
+.tag{
+  display:inline-block;padding:2px 10px;border-radius:12px;
+  font-size:12px;font-weight:500;margin:2px;transition:transform var(--transition-fast);
+}
+.tag:hover{transform:scale(1.05)}
 .tag-blue{background:#dbeafe;color:#1e40af}
 .tag-green{background:#d1fae5;color:#065f46}
 .tag-yellow{background:#fef3c7;color:#92400e}
@@ -947,37 +1173,46 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
    5. Code Panels ⭐（深层分析核心组件）
    ============================================================ */
 .code-panel{
-  border:1px solid var(--border);border-radius:8px;
-  margin:20px 0;overflow:hidden;
+  border:1px solid var(--border);border-radius:var(--radius);
+  margin:20px 0;overflow:hidden;background:var(--bg-primary);
+  transition:box-shadow var(--transition);
 }
+.code-panel:hover{box-shadow:var(--shadow-md)}
 .code-panel + .code-panel{margin-top:24px}
 
 /* 代码头部（文件路径 + 复制按钮） */
 .code-panel .code-header{
-  display:flex;align-items:center;padding:8px 12px;
+  display:flex;align-items:center;padding:10px 14px;
   background:var(--bg-secondary);border-bottom:1px solid var(--border);
-  font-size:13px;
+  font-size:13px;gap:8px;
 }
-.code-panel .code-header .file-icon{margin-right:6px}
+.code-panel .code-header .file-icon{font-size:16px}
 .code-panel .code-header .file-path{
   flex:1;font-family:'SF Mono','Fira Code',monospace;
-  color:var(--text-secondary);font-size:12px;
+  color:var(--text-secondary);font-size:12px;word-break:break-all;
+}
+.code-panel .code-header .file-lang{
+  font-size:11px;color:var(--text-secondary);background:var(--bg-primary);
+  padding:2px 8px;border-radius:10px;border:1px solid var(--border);
 }
 .code-panel .code-header .copy-btn{
-  padding:2px 10px;font-size:12px;background:var(--bg-primary);
-  border:1px solid var(--border);border-radius:4px;cursor:pointer;
-  color:var(--text-secondary);transition:all .15s;
+  padding:3px 12px;font-size:12px;background:var(--bg-primary);
+  border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;
+  color:var(--text-secondary);transition:all var(--transition-fast);
+  position:relative;white-space:nowrap;
 }
 .code-panel .code-header .copy-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.code-panel .code-header .copy-btn.copied{background:var(--success);color:#fff;border-color:var(--success)}
 
 /* 代码内容区 */
 .code-panel .code-content{
   margin:0;padding:16px;background:var(--code-bg);
   overflow-x:auto;font-size:13px;line-height:1.7;
+  counter-reset:code-line;
 }
 .code-panel .code-content code{
   font-family:'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',monospace;
-  white-space:pre;
+  white-space:pre;display:block;
 }
 
 /* 分析注释区 */
@@ -994,15 +1229,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
 .code-panel .code-analysis .analysis-body ul{
   padding-left:20px;margin:8px 0;
 }
-.code-panel .code-analysis .analysis-body li{
-  margin-bottom:4px;
-}
-.code-panel .code-analysis .analysis-body li strong{
-  color:var(--accent);
-}
-.code-panel .code-analysis .analysis-field{
-  margin-bottom:6px;
-}
+.code-panel .code-analysis .analysis-body li{margin-bottom:4px}
+.code-panel .code-analysis .analysis-body li strong{color:var(--accent)}
+.code-panel .code-analysis .analysis-field{margin-bottom:6px}
 .code-panel .code-analysis .analysis-field strong{
   display:inline-block;min-width:70px;color:var(--text-secondary);
 }
@@ -1017,67 +1246,117 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
 /* ============================================================
    6. Tables
    ============================================================ */
+.table-responsive{overflow-x:auto;margin:12px 0;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:14px;margin:12px 0}
 th,td{padding:10px 14px;text-align:left;border:1px solid var(--border)}
-th{background:var(--bg-secondary);font-weight:600;white-space:nowrap}
+th{
+  background:var(--bg-secondary);font-weight:600;white-space:nowrap;
+  position:sticky;top:0;z-index:1;
+}
+tr{transition:background var(--transition-fast)}
 tr:hover{background:var(--accent-light)}
 /* 可搜索表格 */
 .table-search{margin-bottom:12px}
 .table-search input{
-  padding:6px 12px;border:1px solid var(--border);border-radius:6px;
+  padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
   font-size:14px;width:280px;background:var(--bg-secondary);color:var(--text-primary);
-  outline:none;
+  outline:none;transition:border-color var(--transition-fast),box-shadow var(--transition-fast);
 }
-.table-search input:focus{border-color:var(--accent)}
+.table-search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
 
 /* ============================================================
    7. Mermaid Diagrams
    ============================================================ */
 .mermaid-wrapper{
   margin:20px 0;padding:20px;background:var(--bg-secondary);
-  border:1px solid var(--border);border-radius:8px;overflow-x:auto;
+  border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;
+  transition:box-shadow var(--transition);
 }
+.mermaid-wrapper:hover{box-shadow:var(--shadow-sm)}
 .mermaid-wrapper .mermaid{display:flex;justify-content:center}
+.mermaid-loading{
+  text-align:center;padding:40px 20px;color:var(--text-secondary);
+  font-size:14px;
+}
+.mermaid-fallback{
+  padding:16px;background:var(--code-bg);border-radius:var(--radius-sm);
+  font-family:monospace;font-size:13px;white-space:pre-wrap;color:var(--text-secondary);
+}
 
 /* ============================================================
    8. Search
    ============================================================ */
-.search-highlight{background:#fde68a;padding:1px 2px;border-radius:2px}
+.search-highlight{
+  background:#fde68a;padding:1px 2px;border-radius:2px;
+  animation:search-highlight-in .3s ease;
+}
 [data-theme="dark"] .search-highlight{background:#854d0e;color:#fef3c7}
+@keyframes search-highlight-in{from{background:var(--warning);transform:scale(1.05)}to{background:#fde68a;transform:scale(1)}}
 
 /* ============================================================
-   9. Responsive
+   9. Reading Progress & Back-to-Top
    ============================================================ */
-@media(max-width:1024px){
-  .sidebar{transform:translateX(-100%)}
-  .sidebar.open{transform:translateX(0)}
-  .content{margin-left:0;padding:24px 20px}
-  .page-footer{margin-left:0;padding:16px 20px 32px}
-  .menu-toggle{display:block}
-  .overlay.active{display:block}
-  .search-input{width:160px}
+
+/* 阅读进度条 */
+.reading-progress{
+  position:fixed;top:56px;left:0;right:0;height:3px;
+  background:transparent;z-index:101;pointer-events:none;
+}
+.reading-progress-bar{
+  height:100%;background:linear-gradient(90deg,var(--accent),var(--success));
+  width:0;transition:width .1s linear;
 }
 
-@media(max-width:640px){
-  .top-bar h1{font-size:15px}
-  .top-bar .title-sub{display:none}
-  .search-input{width:120px}
-  .content{padding:16px 12px}
-  .content h2{font-size:20px}
+/* 回到顶部按钮 */
+.back-to-top{
+  position:fixed;bottom:24px;right:24px;width:44px;height:44px;
+  background:var(--bg-primary);border:1px solid var(--border);
+  border-radius:50%;font-size:20px;cursor:pointer;z-index:80;
+  color:var(--text-secondary);box-shadow:var(--shadow-md);
+  opacity:0;transform:translateY(20px);pointer-events:none;
+  transition:opacity var(--transition),transform var(--transition),background var(--transition-fast);
+  display:flex;align-items:center;justify-content:center;
+}
+.back-to-top.visible{opacity:1;transform:translateY(0);pointer-events:auto}
+.back-to-top:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px)}
+.back-to-top:focus-visible{box-shadow:0 0 0 3px var(--accent);outline:none}
+
+/* ============================================================
+   10. Empty States
+   ============================================================ */
+.empty-state{
+  text-align:center;padding:32px 20px;color:var(--text-secondary);
+  font-size:14px;border:2px dashed var(--border);border-radius:var(--radius);
+  background:var(--bg-secondary);
+}
+.empty-state .empty-icon{font-size:32px;margin-bottom:8px;display:block}
+.empty-state .empty-title{font-weight:600;margin-bottom:4px;color:var(--text-primary)}
+.empty-state .empty-hint{font-size:13px}
+
+/* ============================================================
+   11. Focus Visible & Accessibility
+   ============================================================ */
+:focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px;
+  border-radius:var(--radius-sm);
+}
+/* 对于有自己 focus 样式的元素，移除默认 outline */
+.search-input:focus-visible,
+.tree-controls button:focus-visible,
+.tree-toggle:focus-visible{outline:none}
+/* 跳过动画（用户偏好） */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 }
 
 /* ============================================================
-   10. Concept Map
+   12. Concept Map
    ============================================================ */
 .concept-grid{
   display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;margin:16px 0;
 }
-.concept-card{
-  scroll-margin-top:80px;transition:box-shadow .3s;
-}
-.concept-card .file-link{
-  color:var(--accent);text-decoration:none;
-}
+.concept-card{scroll-margin-top:80px}
+.concept-card .file-link{color:var(--accent);text-decoration:none}
 .concept-card .file-link:hover{text-decoration:underline}
 .concept-card .file-link code{
   font-family:'SF Mono','Fira Code',monospace;font-size:12px;
@@ -1086,23 +1365,55 @@ tr:hover{background:var(--accent-light)}
 .related-tag{
   display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;
   background:var(--accent-light);color:var(--accent);
-  text-decoration:none;margin:1px 2px;transition:background .15s;
+  text-decoration:none;margin:1px 2px;transition:all var(--transition-fast);
 }
-.related-tag:hover{background:var(--accent);color:#fff}
-/* Mermaid 概念图节点可点击 */
+.related-tag:hover{background:var(--accent);color:#fff;transform:translateY(-1px)}
 .concept-grid .mermaid-wrapper + * {margin-top:20px}
-@media(max-width:768px){
+@media(max-width:768px){.concept-grid{grid-template-columns:1fr}}
+
+/* ============================================================
+   13. Responsive
+   ============================================================ */
+@media(max-width:1024px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0);box-shadow:var(--shadow-lg)}
+  .content{margin-left:0;padding:24px 20px}
+  .page-footer{margin-left:0;padding:16px 20px 32px}
+  .menu-toggle{display:block}
+  .overlay.active{display:block}
+  .search-input{width:160px}
+  .back-to-top{bottom:16px;right:16px}
+}
+
+@media(max-width:640px){
+  .top-bar h1{font-size:15px}
+  .top-bar .title-sub{display:none}
+  .search-input{width:120px;font-size:13px}
+  .content{padding:16px 12px}
+  .content h2{font-size:20px}
+  .content h3{font-size:16px}
+  .card{padding:14px}
+  .code-panel .code-header{padding:8px 10px}
+  .code-panel .code-content{padding:12px;font-size:12px}
+  .code-panel .code-analysis{padding:12px}
+  table{font-size:13px}
+  th,td{padding:8px 10px}
   .concept-grid{grid-template-columns:1fr}
+  .back-to-top{width:38px;height:38px;font-size:18px;bottom:12px;right:12px}
 }
 
 /* ============================================================
-   11. Print
+   14. Print
    ============================================================ */
 @media print{
-  .sidebar,.top-bar,.overlay,.page-footer{display:none}
+  .sidebar,.top-bar,.overlay,.page-footer,.back-to-top,.reading-progress{display:none!important}
   .content{margin-left:0;margin-top:0;padding:0;max-width:none}
-  .code-panel{border:1px solid #ccc;break-inside:avoid}
+  .content section{margin-bottom:24px;page-break-inside:avoid}
+  .code-panel{border:1px solid #ccc;break-inside:avoid;box-shadow:none}
   .code-panel .code-analysis{background:#fff}
+  .card{box-shadow:none;break-inside:avoid}
+  a{color:#000;text-decoration:underline}
+  .code-content{white-space:pre-wrap;word-break:break-all}
 }
 ```
 
@@ -1357,40 +1668,40 @@ ProjectGuide.registerSection({
 
       html += '</div>'; // .concept-grid
     } else {
-      html += '<p style="color:var(--text-secondary)">（未识别业务概念）</p>';
+      html += '<div class="empty-state"><span class="empty-icon">🧭</span><div class="empty-title">未识别业务概念</div><div class="empty-hint">该项目可能结构简单，暂未提取概念地图</div></div>';
     }
 
     container.innerHTML = html;
 
-    // 初始化 Mermaid 图并添加点击事件
-    if (cm.mermaidDef && typeof mermaid !== 'undefined') {
-      try {
-        mermaid.run({ nodes: [container.querySelector('.mermaid')] }).then(function() {
-          var svg = container.querySelector('.mermaid svg');
-          if (svg) {
-            svg.style.cursor = 'default';
-            concepts.forEach(function(c) {
-              var textEls = svg.querySelectorAll('text');
-              textEls.forEach(function(t) {
-                if (t.textContent.indexOf(c.name) !== -1) {
-                  var parentGroup = t.closest('g');
-                  if (parentGroup) {
-                    parentGroup.style.cursor = 'pointer';
-                    parentGroup.addEventListener('click', function() {
-                      var target = document.getElementById('concept-' + c.id);
-                      if (target) {
-                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        target.style.boxShadow = '0 0 0 3px var(--accent)';
-                        setTimeout(function() { target.style.boxShadow = ''; }, 2000);
-                      }
-                    });
-                  }
+    // 初始化 Mermaid 图并添加点击事件（使用异步安全 API）
+    if (cm.mermaidDef) {
+      ProjectGuide.helpers.runMermaid(container);
+      // 延迟绑定点击事件（等待 SVG 渲染）
+      setTimeout(function() {
+        var svg = container.querySelector('.mermaid svg');
+        if (svg) {
+          svg.style.cursor = 'default';
+          concepts.forEach(function(c) {
+            var textEls = svg.querySelectorAll('text');
+            textEls.forEach(function(t) {
+              if (t.textContent.indexOf(c.name) !== -1) {
+                var parentGroup = t.closest('g');
+                if (parentGroup) {
+                  parentGroup.style.cursor = 'pointer';
+                  parentGroup.addEventListener('click', function() {
+                    var target = document.getElementById('concept-' + c.id);
+                    if (target) {
+                      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      target.style.boxShadow = '0 0 0 3px var(--accent)';
+                      setTimeout(function() { target.style.boxShadow = ''; }, 2000);
+                    }
+                  });
                 }
-              });
+              }
             });
-          }
-        }).catch(function() {});
-      } catch(e) {}
+          });
+        }
+      }, 300);
     }
   }
 });
@@ -1433,9 +1744,9 @@ ProjectGuide.registerSection({
 
     container.innerHTML = html;
 
-    // 触发 Mermaid 渲染（如果有新图）
-    if (arch.mermaidDef && typeof mermaid !== 'undefined') {
-      try { mermaid.run({ nodes: [container.querySelector('.mermaid')] }); } catch(e) {}
+    // 触发 Mermaid 渲染（异步安全）
+    if (arch.mermaidDef) {
+      ProjectGuide.helpers.runMermaid(container);
     }
   }
 });
@@ -1456,7 +1767,7 @@ ProjectGuide.registerSection({
     var html = '';
 
     if (!snippets.length) {
-      html += '<p style="color:var(--text-secondary)">（未提取代码片段）</p>';
+      html += '<div class="empty-state"><span class="empty-icon">📝</span><div class="empty-title">暂无代码片段</div><div class="empty-hint">该项目未被提取关键业务代码</div></div>';
       container.innerHTML = html;
       return;
     }
@@ -1538,7 +1849,7 @@ ProjectGuide.registerSection({
     var html = '';
 
     if (!modules.length) {
-      html += '<p style="color:var(--text-secondary)">（未识别核心模块）</p>';
+      html += '<div class="empty-state"><span class="empty-icon">📦</span><div class="empty-title">未识别核心模块</div><div class="empty-hint">该项目可能结构简单，暂未提取模块信息</div></div>';
       container.innerHTML = html;
       return;
     }
@@ -1617,9 +1928,9 @@ ProjectGuide.registerSection({
 
     container.innerHTML = html;
 
-    // 渲染 Mermaid 图
-    if (df.mermaidDef && typeof mermaid !== 'undefined') {
-      try { mermaid.run({ nodes: [container.querySelector('.mermaid')] }); } catch(e) {}
+    // 渲染 Mermaid 图（异步安全）
+    if (df.mermaidDef) {
+      ProjectGuide.helpers.runMermaid(container);
     }
   }
 });
@@ -1675,7 +1986,7 @@ ProjectGuide.registerSection({
 
       html += '</tbody></table>';
     } else {
-      html += '<p style="color:var(--text-secondary)">（未识别到埋点事件）</p>';
+      html += '<div class="empty-state"><span class="empty-icon">📊</span><div class="empty-title">未识别到埋点事件</div><div class="empty-hint">该项目可能未集成埋点 SDK，或使用了非标准埋点方式</div></div>';
     }
 
     // 覆盖缺口
@@ -1783,7 +2094,7 @@ ProjectGuide.registerSection({
     var html = '';
 
     if (!risks.length) {
-      html += '<p style="color:var(--text-secondary)">（未识别显著风险）</p>';
+      html += '<div class="empty-state"><span class="empty-icon">✅</span><div class="empty-title">暂未识别显著风险</div><div class="empty-hint">项目结构清晰，未发现明显的风险信号</div></div>';
       container.innerHTML = html;
       return;
     }
